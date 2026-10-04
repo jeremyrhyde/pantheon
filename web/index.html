@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d1117">
+  <title>Pantheon</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/icon.svg">
+  <link rel="manifest" href="/ui/manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Pantheon">
+  <link rel="stylesheet" href="/ui/style.css">
+  <script defer src="/ui/app.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</head>
+<body x-data="app()" x-cloak>
+
+  <header class="topbar">
+    <h1 class="brand">Pantheon</h1>
+    <span class="status" :class="healthy ? 'online' : 'offline'">
+      <span class="dot" aria-hidden="true"></span>
+      <span x-text="healthy ? 'online' : 'offline'"></span>
+    </span>
+  </header>
+
+  <!-- Tabs — add a button + a matching <section> to grow the UI. -->
+  <nav class="tabs" role="tablist">
+    <button role="tab" :aria-selected="tab === 'home'"
+            :class="{ active: tab === 'home' }"
+            @click="tab = 'home'">Home</button>
+    <button role="tab" :aria-selected="tab === 'settings'"
+            :class="{ active: tab === 'settings' }"
+            @click="tab = 'settings'">Settings</button>
+  </nav>
+
+  <main>
+    <section x-show="tab === 'home'" role="tabpanel" class="panel">
+      <div class="card">
+        <div class="card-label">Status</div>
+        <div class="card-value" x-text="healthy ? 'Running' : 'Unreachable'"></div>
+      </div>
+    </section>
+
+    <section x-show="tab === 'settings'" role="tabpanel" class="panel">
+      <div class="empty">Nothing to configure yet.</div>
+    </section>
+  </main>
+
+</body>
+</html>

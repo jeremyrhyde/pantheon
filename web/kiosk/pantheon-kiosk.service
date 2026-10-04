@@ -1,0 +1,32 @@
+# Pantheon touchscreen kiosk — systemd user service.
+#
+# Installed by scripts/install-kiosk.sh which rewrites @PANTHEON_HOME@ to the
+# actual checkout path. Two install paths exist depending on what your Pi
+# is running:
+#
+#   Desktop session (Pi OS, Ubuntu Desktop, anything that boots into a DE):
+#     The graphical-session.target hook below will start the kiosk after
+#     the user logs in. Combined with auto-login, you get a fullscreen UI
+#     on boot with no manual action.
+#
+#   Headless Ubuntu Server / Lite OS:
+#     deploy/xinitrc.kiosk + the install script's --headless mode set up a
+#     minimal X stack that runs ONLY the kiosk (no desktop). See README.
+
+[Unit]
+Description=Pantheon kiosk (Chromium fullscreen)
+After=graphical-session.target pantheon.service
+Wants=pantheon.service
+
+[Service]
+Type=simple
+ExecStart=@PANTHEON_HOME@/web/kiosk/start-kiosk.sh
+Restart=on-failure
+RestartSec=5
+
+# DISPLAY and XAUTHORITY are usually inherited from the user's graphical
+# session, but a fallback for autostart-into-X setups:
+Environment=DISPLAY=:0
+
+[Install]
+WantedBy=graphical-session.target

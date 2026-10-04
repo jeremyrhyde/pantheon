@@ -1,0 +1,24 @@
+[project]
+name = "pantheon"
+version = "0.1.0"
+description = "Pantheon — FastAPI server with a no-build web UI. Requirements TBD."
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic",
+    "pydantic-settings",
+    "pyyaml",
+    "aiosqlite",
+]
+
+[dependency-groups]
+dev = [
+    "httpx",
+    "pytest",
+    "pytest-asyncio",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

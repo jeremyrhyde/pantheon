@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Placeholder icon. Replace, and add PNGs (32/180/192/512) like Hestia's
+       if iOS home-screen icons matter — iOS ignores SVG touch icons. -->
+  <rect width="64" height="64" rx="14" fill="#0d1117"/>
+  <circle cx="32" cy="32" r="14" fill="none" stroke="#4ade80" stroke-width="4"/>
+  <circle cx="32" cy="32" r="4" fill="#4ade80"/>
+</svg>

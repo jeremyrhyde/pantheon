@@ -1,0 +1,33 @@
+# ---- Pantheon standard: keep this block identical across repos ----
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+dist/
+build/
+
+# Local config and secrets — commit the *.example copies instead
+.env
+
+# Runtime data
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+logs/
+*.log
+
+# Frontend
+node_modules/
+
+# Editors / OS / sync tools
+.DS_Store
+.codesync
+.stfolder
+.stignore
+*.sync-conflict-*
+
+# ---- pantheon-specific ----
+.claude/

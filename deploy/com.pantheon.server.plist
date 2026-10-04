@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Pantheon server — launchd user agent (macOS). The macOS counterpart of
+  deploy/pantheon.service.
+
+  Installed by scripts/install-server.sh (`make service-install`) to
+  ~/Library/LaunchAgents/, with @PANTHEON_HOME@ / @UV_BIN@ / @LOG_DIR@ rewritten.
+  Starts at login and restarts if it exits. .env is read by config.Settings
+  because the working directory is the repo root.
+
+  Logs: ~/Library/Logs/pantheon/pantheon.log   (or `make service-logs`)
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.pantheon.server</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>@UV_BIN@</string>
+    <string>run</string>
+    <string>python</string>
+    <string>main.py</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>@PANTHEON_HOME@</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>5</integer>
+  <key>StandardOutPath</key>
+  <string>@LOG_DIR@/pantheon.log</string>
+  <key>StandardErrorPath</key>
+  <string>@LOG_DIR@/pantheon.log</string>
+</dict>
+</plist>

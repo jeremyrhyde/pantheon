@@ -1,0 +1,188 @@
+/* Pantheon UI — design tokens + components.
+ *
+ * Every color, radius, spacing, shadow, and duration is a custom property on
+ * :root. Re-theme by overriding tokens, not by editing component rules.
+ * Token names match Hestia's so the sibling projects can share a palette.
+ */
+
+:root {
+  /* Surfaces — dark by default. */
+  --color-bg:           #0d1117;
+  --color-surface:      #161b22;
+  --color-surface-2:    #1f2630;
+  --color-surface-3:    #2a323d;
+  --color-text:         #e6edf3;
+  --color-text-muted:   #8b949e;
+  --color-text-faint:   #6e7681;
+
+  --color-border:       #30363d;
+  --color-border-soft:  #21262d;
+
+  /* State colors */
+  --color-accent:       #4ade80;
+  --color-accent-soft:  #4ade8030;
+  --color-accent-dim:   #22c55e;
+  --color-danger:       #f87171;
+  --color-warn:         #fbbf24;
+  --color-warn-soft:    #fbbf2422;
+
+  /* Type scale */
+  --font-stack: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --text-xs:  0.75rem;
+  --text-sm:  0.875rem;
+  --text-md:  1rem;
+  --text-lg:  1.25rem;
+  --text-xl:  1.5rem;
+
+  /* Geometry */
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+  --radius-pill: 999px;
+  --radius-card:   var(--radius-lg);
+  --radius-button: var(--radius-md);
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-2: 0 4px 14px rgba(0, 0, 0, 0.35);
+
+  /* Spacing — multiples of 4 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --content-max: 900px;
+  --tap-min: 44px;
+
+  --transition:      180ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Phone safe-area insets (zero elsewhere). */
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-right:  env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left, 0px);
+}
+
+/* --------------------------------------------------------------- reset */
+
+*, *::before, *::after { box-sizing: border-box; }
+[x-cloak] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-stack);
+  font-size: var(--text-md);
+  padding: 0 var(--safe-right) var(--safe-bottom) var(--safe-left);
+}
+
+/* --------------------------------------------------------------- topbar */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(var(--space-3) + var(--safe-top)) var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.brand { margin: 0; font-size: var(--text-lg); font-weight: 600; }
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+.status .dot {
+  width: 8px; height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-danger);
+  transition: background var(--transition);
+}
+.status.online .dot { background: var(--color-accent); }
+
+/* --------------------------------------------------------------- tabs */
+
+.tabs {
+  display: flex;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+.tabs button {
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+.tabs button.active { color: var(--color-text); border-bottom-color: var(--color-accent); }
+
+/* --------------------------------------------------------------- layout */
+
+main {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-4);
+}
+.panel { display: grid; gap: var(--space-3); }
+
+/* --------------------------------------------------------------- cards */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-1);
+}
+.card-label {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+.card-value { font-size: var(--text-xl); font-weight: 600; }
+
+/* --------------------------------------------------------------- buttons */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min);
+  padding: 0 var(--space-6);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.btn:hover:not(:disabled) { border-color: var(--color-accent); }
+.btn:disabled { opacity: 0.55; cursor: default; }
+
+/* --------------------------------------------------------------- empty state */
+
+.empty {
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+  color: var(--color-text-muted);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-card);
+}

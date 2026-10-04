@@ -1,0 +1,7 @@
+# Auto-launch X (and therefore the kiosk) when the user logs in on tty1.
+# Appended by scripts/install-kiosk.sh --headless to ~/.bash_profile.
+# Combined with getty auto-login, this is the headless boot path:
+#   boot → getty auto-login → bash → startx → openbox → chromium kiosk
+if [[ -z "${DISPLAY:-}" && "$(tty)" == "/dev/tty1" ]]; then
+  exec startx -- -nocursor
+fi

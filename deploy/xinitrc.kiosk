@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Minimal .xinitrc for a headless Raspberry Pi OS Lite (or Ubuntu Server)
+# install that ships no desktop environment. Used together with the getty
+# auto-login hook to start an X session that runs ONLY the kiosk (no
+# desktop, no taskbar).
+#
+# Installed by scripts/install-kiosk.sh --headless to ~/.xinitrc.
+
+# Lightweight window manager so chromium has something to attach to.
+# matchbox-window-manager is a tiny, kiosk-oriented WM: it starts fast and
+# hands a single fullscreen client the whole screen (no titlebar, no
+# decorations) — exactly what a kiosk wants, and lighter than openbox.
+matchbox-window-manager -use_titlebar no &
+
+# Wait briefly for the WM to register, then launch the kiosk launcher.
+sleep 1
+exec @PANTHEON_HOME@/web/kiosk/start-kiosk.sh
