@@ -131,3 +131,30 @@ async def test_follow_survives_the_file_vanishing_mid_rotation(tmp_path, monkeyp
     assert not task.done()
     task.cancel()
     assert log.module_activity("apollo")["last_api_call"] == 995.0
+
+
+async def test_follow_switches_files_even_if_draining_the_old_handle_fails(tmp_path, monkeypatch):
+    path = tmp_path / "access.log"
+    path.write_text("")
+    log = AccessLog(path, {"apollo"}, clock=lambda: 1000.0)
+    real_drain = log._drain
+    first = []
+    broken = [False]
+
+    def drain(handle, partial):
+        if not first:
+            first.append(handle)
+        if broken[0] and handle is first[0]:
+            raise OSError("read failed")
+        return real_drain(handle, partial)
+
+    monkeypatch.setattr(log, "_drain", drain)
+    task = asyncio.create_task(log.follow(poll_s=0.02))
+    await asyncio.sleep(0.05)
+    broken[0] = True
+    path.rename(tmp_path / "access-1.log")
+    path.write_text(line("/apollo/api/fresh", ts=995))
+    await asyncio.sleep(0.2)
+    task.cancel()
+    assert log.module_activity("apollo")["last_api_call"] == 995.0
+    assert first[0].closed

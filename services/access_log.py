@@ -131,9 +131,11 @@ class AccessLog:
                     stat = os.stat(self._path)
                     if handle is None or stat.st_ino != inode or stat.st_size < handle.tell():
                         if handle is not None:
-                            self._drain(handle, partial)
-                            handle.close()
-                            handle = None
+                            try:
+                                self._drain(handle, partial)
+                            finally:
+                                handle.close()
+                                handle = None
                         handle = open(self._path, encoding="utf-8", errors="replace")
                         if skip_existing:
                             handle.seek(0, os.SEEK_END)
