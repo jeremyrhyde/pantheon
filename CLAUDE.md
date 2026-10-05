@@ -2,8 +2,10 @@
 
 ## Status
 
-Skeleton plus four modules. Pantheon's own server is the Apollo `template`
-skeleton, renamed; how it presents the modules together is not designed yet.
+Pantheon fronts four modules through a Caddy gateway (`:8000/<module>/`),
+groups their units under `pantheon.target`, and shows a placeholder home
+screen. The unified UI is not designed yet. Pluto's web server is pending
+(registered, `enabled: false`).
 
 ## Modules
 
@@ -20,6 +22,17 @@ each its own repo with its own `make setup build run test clean`. Pantheon's
 - When a piece is needed, look in the modules first for a working version:
   `hermes/core/{events,websocket,state}.py`, `hermes/config.py`,
   `hestia/web/`, `hestia/scripts/` + `hestia/deploy/`.
+
+## Module contract (docs/module-contract.md)
+
+- Ports: gateway 8000, Pantheon app 8010, apollo 8001, hermes 8002,
+  hestia 8003, pluto 8004.
+- UI at `/` (mounted last), API under `/api/` (WebSocket `/api/ws`),
+  `/health` at the root, `make service-*`.
+- Only relative URLs in any UI — no leading `/` in `href`, `src`, `fetch`,
+  manifests. That is what lets one build run standalone and under a prefix.
+- Pantheon composes over HTTP only; anything new must work standalone in its
+  module first.
 
 ## Conventions
 
