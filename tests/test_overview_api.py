@@ -67,7 +67,10 @@ def test_heartbeat_registers_the_sender_ip(tmp_path):
 
 def test_module_icon(tmp_path):
     with make(tmp_path) as c:
-        assert c.get("/api/modules/apollo/icon").status_code == 200
+        icon = c.get("/api/modules/apollo/icon")
+        assert icon.status_code == 200
+        # Revalidate every load, so a replaced icon shows up without a hard refresh.
+        assert icon.headers["cache-control"] == "no-cache"
         assert c.get("/api/modules/hermes/icon").status_code == 404
         assert c.get("/api/modules/pluto/icon").status_code == 404
         assert c.get("/api/modules/nope/icon").status_code == 404

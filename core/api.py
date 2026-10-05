@@ -57,7 +57,9 @@ def _build_modules_router() -> APIRouter:
         path = REPO_ROOT / module.icon
         if not path.is_file():
             raise HTTPException(status_code=404, detail="no icon")
-        return FileResponse(path)
+        # Icons get replaced in place; no-cache makes browsers revalidate (a
+        # cheap 304 via the ETag) instead of showing a stale copy.
+        return FileResponse(path, headers={"Cache-Control": "no-cache"})
 
     return router
 
