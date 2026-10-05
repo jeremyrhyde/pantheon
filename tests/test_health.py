@@ -11,8 +11,10 @@ def test_health_ok():
     assert resp.json() == {"status": "ok"}
 
 
-def test_ui_is_served():
+def test_ui_is_served_at_root():
     client = TestClient(build_app(Settings()))
-    resp = client.get("/ui/")
+    resp = client.get("/")
     assert resp.status_code == 200
     assert "<title>Pantheon</title>" in resp.text
+    assert client.get("/health").json() == {"status": "ok"}  # not shadowed
+    assert client.get("/ui/").status_code == 404

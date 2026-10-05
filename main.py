@@ -12,11 +12,13 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import httpx
 import uvicorn
 from fastapi import FastAPI
 
-from config import Settings
+from config import Settings, load_modules_config
 from core.api import create_app
+from services.health import HealthChecker
 
 
 def _configure_logging(level: str) -> None:
@@ -26,15 +28,24 @@ def _configure_logging(level: str) -> None:
     )
 
 
-def build_app(settings: Settings | None = None) -> FastAPI:
+def build_app(
+    settings: Settings | None = None,
+    *,
+    transport: httpx.AsyncBaseTransport | None = None,
+) -> FastAPI:
+    """`transport` lets tests stand in for the modules' /health endpoints."""
     settings = settings or Settings()
     _configure_logging(settings.LOG_LEVEL)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.settings = settings
-        # Start components here; stop them after the yield.
-        yield
+        app.state.modules = load_modules_config(settings=settings)
+        async with httpx.AsyncClient(transport=transport) as client:
+            app.state.health_checker = HealthChecker(
+                client, timeout=settings.MODULE_HEALTH_TIMEOUT_SECONDS
+            )
+            yield
 
     return create_app(settings, lifespan=lifespan)
 
