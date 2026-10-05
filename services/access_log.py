@@ -5,7 +5,8 @@ last API call, the last page load ("last user visit") and requests in the
 last minute; per client IP, when it was last seen and what it was viewing —
 which is how an edge kiosk shows as connected. Caddy logs the original
 (pre-strip) URI, so the module is the first path segment. The heartbeat
-endpoint is ignored: the agent sends it whether or not the kiosk works.
+endpoint is ignored (the agent sends it whether or not the kiosk works), as
+is /health (Pantheon probing its own gateway from 127.0.0.1).
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 HEARTBEAT_PATH = "/api/devices/heartbeat"
+SELF_PROBE_PATH = "/health"  # Pantheon probing its own gateway
 _WINDOW_S = 60.0
 
 
@@ -58,7 +60,7 @@ class AccessLog:
         ip = request.get("client_ip") or request.get("remote_ip")
         method = request.get("method", "GET")
         path, _, query = uri.partition("?")
-        if path == HEARTBEAT_PATH:
+        if path in (HEARTBEAT_PATH, SELF_PROBE_PATH):
             return
 
         first = path.lstrip("/").split("/", 1)[0]

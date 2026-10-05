@@ -127,7 +127,7 @@ function statusApp() {
              `${this.bytes(h.mem_used)} / ${this.bytes(h.mem_total)}`),
         dial('temp', 'TEMP', h.temp_c, TEMP_MAX, '°C', this.history.temp, 0, TEMP_MAX,
              h.temp_c == null ? 'no sensor' : h.temp_c >= 80 ? 'throttling range' : ''),
-        dial('disk', 'DISK', pct(h.disk_used, h.disk_total), 100, '%', null, 0, 100,
+        dial('disk', 'DISK', pct(h.disk_used, h.disk_total), 100, '%', this.history.disk, 0, 100,
              `${this.bytes(h.disk_used)} / ${this.bytes(h.disk_total)}`),
       ];
     },
@@ -217,6 +217,14 @@ function statusApp() {
       const unlisted = this.devices.length - listed.length;
       if (!listed.length) return unlisted ? `${unlisted} unlisted` : '0/0';
       return this.countText(listed) + (unlisted ? ` · ${unlisted} unlisted` : '');
+    },
+    // The module the heartbeat's kiosk_url points at ('home' for the root).
+    kioskTarget(d) {
+      try {
+        return new URL(d.heartbeat?.kiosk_url).pathname.split('/').filter(Boolean)[0] || 'home';
+      } catch {
+        return null;
+      }
     },
     pingText(ms) {
       if (ms == null) return '—';

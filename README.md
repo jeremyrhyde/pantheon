@@ -39,7 +39,7 @@ Pantheon never imports module code. It talks to modules only over HTTP.
   drop-in, so `systemctl --user restart pantheon.target` reaches all of them
   and `systemctl --user restart hestia` still reaches just Hestia.
 - **Registry.** `modules.yaml` (copied from `modules.yaml.example` by
-  `make setup`; gitignored, per host) lists each module's name, title, port
+  `make setup`; gitignored, per host) lists each module's name, title, port,
   whether it is enabled and its app icon. The Caddyfile and `pantheon.target` are
   generated from it.
 

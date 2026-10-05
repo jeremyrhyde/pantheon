@@ -18,6 +18,8 @@ def record_host(history: History, sample: dict[str, Any]) -> None:
     history.add("cpu", sample.get("cpu_percent"))
     if sample.get("mem_total"):
         history.add("mem", 100 * sample["mem_used"] / sample["mem_total"])
+    if sample.get("disk_total"):
+        history.add("disk", 100 * sample["disk_used"] / sample["disk_total"])
     history.add("temp", sample.get("temp_c"))
     history.add("net_rx", sample.get("net_rx_bps"))
     history.add("net_tx", sample.get("net_tx_bps"))
@@ -70,7 +72,7 @@ def build_overview(
         "generated_at": iso(now),
         "overall": overall_state(module_rows, device_rows, host_row),
         "host": host_row,
-        "history": {name: history.series(name) for name in ("cpu", "mem", "temp", "net_rx", "net_tx")},
+        "history": {name: history.series(name) for name in ("cpu", "mem", "temp", "net_rx", "net_tx", "disk")},
         "modules": module_rows,
         "devices": device_rows,
     }

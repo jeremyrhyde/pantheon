@@ -31,9 +31,9 @@ def test_overall_state_rules():
 def test_record_host_feeds_history():
     h = History(window_s=100, clock=lambda: 10.0)
     record_host(h, {"cpu_percent": 20, "mem_used": 1, "mem_total": 4, "temp_c": None,
-                    "net_rx_bps": 5, "net_tx_bps": 6})
+                    "net_rx_bps": 5, "net_tx_bps": 6, "disk_used": 1, "disk_total": 8})
     assert h.series("cpu") == [[10.0, 20.0]] and h.series("mem") == [[10.0, 25.0]]
-    assert h.series("temp") == []
+    assert h.series("temp") == [] and h.series("disk") == [[10.0, 12.5]]
 
 
 async def test_run_every_survives_a_failing_tick():
@@ -81,6 +81,7 @@ async def test_build_overview_shape(tmp_path):
                          modules=modules, monitor=monitor, access_log=log, devices=devices, now=100.0)
     assert set(out) == {"generated_at", "overall", "host", "history", "modules", "devices"}
     assert out["host"]["units"] == {"gateway": True}
+    assert set(out["history"]) == {"cpu", "mem", "temp", "net_rx", "net_tx", "disk"}
     assert {"name", "title", "path", "enabled", "state", "latency_ms", "last_ok", "status",
             "last_api_call", "last_visit", "req_per_min", "req_history"} <= set(out["modules"][0])
     assert out["devices"][0]["name"] == "d" and out["overall"] == "degraded"

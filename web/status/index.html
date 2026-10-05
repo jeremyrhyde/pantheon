@@ -97,7 +97,7 @@
     </aside>
   </main>
 
-  <footer class="banners">
+  <footer class="banners" :class="{ 'is-stale': stale }">
     <button class="banner" type="button" @click="openSheet('modules')" aria-controls="status-sheet" :aria-expanded="sheet === 'modules'">
       <span class="banner__title">MODULES <b x-text="countText(modules.filter(m => m.enabled))"></b></span>
       <span class="banner__chips">
@@ -170,7 +170,7 @@
             <dt>ping</dt><dd x-text="pingText(d.ping_ms)"></dd>
             <dt>heartbeat</dt><dd x-text="ago(d.last_heartbeat)"></dd>
             <dt>kiosk</dt><dd x-text="d.heartbeat ? (d.heartbeat.chromium_running ? 'running' : 'not running') : '—'"></dd>
-            <dt>showing</dt><dd x-text="d.last_seen_module || '—'"></dd>
+            <dt>showing</dt><dd x-text="(d.last_seen_module || '—') + (kioskTarget(d) ? ` (set: ${kioskTarget(d)})` : '')"></dd>
           </dl>
           <div class="minibars" x-show="d.heartbeat">
             <template x-for="b in deviceBars(d)" :key="b.label">

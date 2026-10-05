@@ -60,7 +60,7 @@ def build_app(
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         modules = load_modules_config(settings=settings)
         history = History(settings.HISTORY_SECONDS)
-        access_log = AccessLog(settings.access_log_path, [m.name for m in modules.modules])
+        access_log = AccessLog(settings.access_log_path, [m.name for m in modules.enabled])
         sampler = host_sampler or HostSampler()
         async with httpx.AsyncClient(transport=transport) as client:
             monitor = ModuleMonitor(modules, client, timeout=settings.MODULE_HEALTH_TIMEOUT_SECONDS)

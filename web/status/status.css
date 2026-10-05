@@ -71,7 +71,8 @@ body.hud > :not(.starfield, .sheet, .sheet-backdrop) { position: relative; z-ind
   min-height: 0;
   transition: filter var(--transition);
 }
-.hud-host.is-stale { filter: grayscale(1) opacity(0.55); }
+.hud-host.is-stale,
+.banners.is-stale { filter: grayscale(1) opacity(0.55); }
 
 .dials {
   display: grid;

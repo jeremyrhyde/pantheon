@@ -33,6 +33,21 @@ def test_pantheon_paths_and_heartbeats(tmp_path):
     assert log.last_seen("10.0.0.9") is None            # heartbeats aren't traffic
 
 
+def test_gateway_self_probe_isnt_traffic(tmp_path):
+    log = AccessLog(tmp_path / "a.log", {"apollo"}, clock=lambda: 1000.0)
+    log.ingest(line("/health", ip="127.0.0.1"))
+    assert log.last_seen("127.0.0.1") is None
+    log.ingest(line("/apollo/health", ip="127.0.0.1"))
+    assert log.viewing("127.0.0.1") == "apollo"          # module health is unaffected
+
+
+def test_disabled_module_requests_are_home_and_not_activity(tmp_path):
+    log = AccessLog(tmp_path / "a.log", {"apollo"}, clock=lambda: 1000.0)   # pluto not passed: disabled
+    log.ingest(line("/pluto/api/x", ip="10.0.0.5"))
+    assert log.viewing("10.0.0.5") == "home"
+    assert log.module_activity("pluto") == {"last_api_call": None, "last_visit": None, "req_per_min": 0}
+
+
 def test_requests_older_than_a_minute_drop_out(tmp_path):
     now = [1000.0]
     log = AccessLog(tmp_path / "a.log", {"apollo"}, clock=lambda: now[0])
