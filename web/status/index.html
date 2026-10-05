@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#05070c">
+  <title>Pantheon status</title>
+  <link rel="icon" type="image/svg+xml" href="../icon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="status.css">
+  <script defer src="../starfield.js"></script>
+  <script defer src="status.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</head>
+<body class="hud" x-data="statusApp()" x-cloak @pointerdown="poke()">
+  <canvas class="starfield" x-ref="sky" aria-hidden="true"></canvas>
+
+  <header class="hud-top">
+    <a class="hud-back" href="../" aria-label="Home">◂</a>
+    <span class="hud-brand">PANTHEON</span>
+    <span class="hud-hostname" x-text="host.hostname || '—'"></span>
+    <span class="hud-overall">
+      <span class="state-dot" :class="'state-dot--' + overall"></span>
+      <span x-text="overallText"></span>
+    </span>
+    <span class="hud-uptime" x-text="'up ' + duration(host.uptime_s)"></span>
+    <span class="hud-clock" x-text="clock"></span>
+  </header>
+
+  <div class="hud-alert" x-show="stale" x-text="`PANTHEON UNREACHABLE — last data ${ago(lastOkAt)}`"></div>
+
+  <main class="hud-host" :class="{ 'is-stale': stale }">
+    <section class="dials">
+      <template x-for="d in dials" :key="d.key">
+        <figure class="dial" :class="'band--' + d.band">
+          <svg class="dial__svg" viewBox="0 0 120 120" aria-hidden="true">
+            <path class="dial__track" :d="arc(1)"></path>
+            <path class="dial__tick" :d="ticks"></path>
+            <path class="dial__value" :d="arc(d.fraction)"></path>
+          </svg>
+          <div class="dial__readout">
+            <span class="dial__number" x-text="d.text"></span><span class="dial__unit" x-text="d.unit"></span>
+          </div>
+          <figcaption class="dial__label" x-text="d.label"></figcaption>
+          <svg class="spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">
+            <polyline :points="spark(d.history, d.min, d.max)"></polyline>
+          </svg>
+          <div class="dial__sub" x-text="d.sub"></div>
+        </figure>
+      </template>
+    </section>
+
+    <aside class="side">
+      <div class="side__row">
+        <span class="side__label">LOAD</span>
+        <span class="bars">
+          <template x-for="l in loadBars" :key="l.label">
+            <span class="bar"><span class="bar__fill" :style="`width:${l.pct}%`"></span><span class="bar__text" x-text="l.text"></span></span>
+          </template>
+        </span>
+      </div>
+      <div class="side__row">
+        <span class="side__label">CORES</span>
+        <span class="cores">
+          <template x-for="(c, i) in cores" :key="i">
+            <span class="core" :title="c + '%'"><span class="core__fill" :style="`height:${c}%`"></span></span>
+          </template>
+        </span>
+      </div>
+      <div class="side__row">
+        <span class="side__label">NET</span>
+        <span class="net">
+          <span x-text="'↓ ' + rate(host.net_rx_bps)"></span>
+          <span x-text="'↑ ' + rate(host.net_tx_bps)"></span>
+          <svg class="spark spark--small" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">
+            <polyline :points="spark(history.net_rx, 0, null)"></polyline>
+          </svg>
+        </span>
+      </div>
+      <div class="side__row" x-show="host.wifi_dbm != null">
+        <span class="side__label">WIFI</span>
+        <span class="wifi">
+          <template x-for="n in 4" :key="n"><span class="wifi__bar" :class="{ 'is-on': n <= wifiLevel }" :style="`height:${n * 25}%`"></span></template>
+          <span x-text="host.wifi_dbm + ' dBm'"></span>
+        </span>
+      </div>
+      <div class="lamps">
+        <template x-for="l in lamps" :key="l.label">
+          <span class="lamp" :class="l.cls" x-text="l.label"></span>
+        </template>
+      </div>
+      <div class="lamps">
+        <template x-for="u in units" :key="u.label">
+          <span class="lamp lamp--unit" :class="u.cls" x-text="u.label"></span>
+        </template>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="banners">
+    <button class="banner" type="button" @click="openSheet('modules')" :aria-expanded="sheet === 'modules'">
+      <span class="banner__title">MODULES <b x-text="countText(modules.filter(m => m.enabled))"></b></span>
+      <span class="banner__chips">
+        <template x-for="m in modules" :key="m.name">
+          <span class="chip"><span class="state-dot" :class="'state-dot--' + m.state"></span><span x-text="m.name"></span><span class="chip__note" x-text="moduleNote(m)"></span></span>
+        </template>
+      </span>
+      <span class="banner__more">▸</span>
+    </button>
+    <button class="banner" type="button" @click="openSheet('devices')" :aria-expanded="sheet === 'devices'">
+      <span class="banner__title">DEVICES <b x-text="countText(devices.filter(d => d.listed))"></b></span>
+      <span class="banner__chips">
+        <template x-for="d in devices" :key="d.name">
+          <span class="chip"><span class="state-dot" :class="'state-dot--' + d.state"></span><span x-text="d.name"></span><span class="chip__note" x-text="d.issue ? '(' + d.issue + ')' : ''"></span></span>
+        </template>
+        <span class="chip chip--empty" x-show="devices.length === 0">none yet</span>
+      </span>
+      <span class="banner__more">▸</span>
+    </button>
+  </footer>
+
+  <div class="sheet-backdrop" x-show="sheet" x-transition:enter-start="is-hidden" x-transition:leave-end="is-hidden" @click="closeSheet()"></div>
+  <section class="sheet" x-show="sheet" x-transition:enter-start="is-hidden" x-transition:leave-end="is-hidden"
+           @touchstart.passive="swipeStart($event)" @touchend="swipeEnd($event)">
+    <header class="sheet__head">
+      <span x-text="sheet === 'modules' ? 'MODULES' : 'DEVICES'"></span>
+      <button class="sheet__close" type="button" @click="closeSheet()" aria-label="Close">✕</button>
+    </header>
+
+    <div class="sheet__body" x-show="sheet === 'modules'">
+      <template x-for="m in modules" :key="m.name">
+        <article class="card">
+          <header class="card__head">
+            <span class="state-dot" :class="'state-dot--' + m.state"></span>
+            <b x-text="m.title"></b>
+            <span class="card__state" x-text="m.state"></span>
+            <a class="card__open" x-show="m.enabled" :href="'../' + m.path">open ▸</a>
+          </header>
+          <dl class="kv">
+            <dt>health</dt><dd x-text="m.latency_ms != null ? m.latency_ms + ' ms' : '—'"></dd>
+            <dt>last API call</dt><dd x-text="ago(m.last_api_call)"></dd>
+            <dt>last visit</dt><dd x-text="ago(m.last_visit)"></dd>
+            <dt>requests / min</dt><dd x-text="m.req_per_min"></dd>
+          </dl>
+          <svg class="spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">
+            <polyline :points="spark(m.req_history, 0, null)"></polyline>
+          </svg>
+          <p class="card__summary" x-show="m.status?.summary" x-text="m.status?.summary"></p>
+          <dl class="kv" x-show="m.status?.stats?.length">
+            <template x-for="s in (m.status?.stats ?? [])" :key="s.label">
+              <div class="kv__pair" :class="{ 'is-warn': s.warn }"><dt x-text="s.label"></dt><dd x-text="formatStat(s)"></dd></div>
+            </template>
+          </dl>
+        </article>
+      </template>
+    </div>
+
+    <div class="sheet__body" x-show="sheet === 'devices'">
+      <p class="card__summary" x-show="devices.length === 0">No devices yet — list them in devices.yaml, or install an edge kiosk with <code>make kiosk-install MODULE=… SERVER=…</code>.</p>
+      <template x-for="d in devices" :key="d.name">
+        <article class="card">
+          <header class="card__head">
+            <span class="state-dot" :class="'state-dot--' + d.state"></span>
+            <b x-text="d.name"></b>
+            <span class="card__state" x-text="d.issue || d.state"></span>
+            <span class="card__tag" x-show="!d.listed">unlisted</span>
+          </header>
+          <dl class="kv">
+            <dt>host</dt><dd x-text="d.host + (d.ip && d.ip !== d.host ? ' (' + d.ip + ')' : '')"></dd>
+            <dt>ping</dt><dd x-text="d.ping_ms != null ? d.ping_ms + ' ms' : '—'"></dd>
+            <dt>heartbeat</dt><dd x-text="ago(d.last_heartbeat)"></dd>
+            <dt>kiosk</dt><dd x-text="d.heartbeat ? (d.heartbeat.chromium_running ? 'running' : 'not running') : '—'"></dd>
+            <dt>showing</dt><dd x-text="d.last_seen_module || '—'"></dd>
+          </dl>
+          <div class="minibars" x-show="d.heartbeat">
+            <template x-for="b in deviceBars(d)" :key="b.label">
+              <span class="minibar" :class="'band--' + b.band"><span class="minibar__label" x-text="b.label"></span><span class="bar"><span class="bar__fill" :style="`width:${b.pct}%`"></span></span><span class="minibar__text" x-text="b.text"></span></span>
+            </template>
+          </div>
+          <ol class="timeline" x-show="d.transitions.length">
+            <template x-for="(t, i) in d.transitions" :key="i">
+              <li class="timeline__item"><span class="state-dot" :class="'state-dot--' + t.to"></span><span x-text="timeOf(t.at)"></span></li>
+            </template>
+          </ol>
+        </article>
+      </template>
+    </div>
+  </section>
+</body>
+</html>

@@ -97,6 +97,7 @@
   --duration-pulse: 1.6s;
   --duration-leave: 400ms;
   --duration-sheet: 260ms;
+  --dial-size: clamp(140px, 32vh, 260px);  /* status-screen dial diameter cap */
 }
 
 /* --------------------------------------------------------------- reset */
