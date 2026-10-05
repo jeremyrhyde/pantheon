@@ -30,6 +30,8 @@ function statusApp() {
     lastOkAt: null,
     now: Date.now(),
     sheet: null,
+    shownSheet: null,  // what the sheet shows; kept through the slide-out
+    polling: false,
     idleAt: Date.now(),
     touchY: null,
     resumedAt: Date.now(),
@@ -45,6 +47,7 @@ function statusApp() {
       startStarfield(this.$refs.sky, { dim: 0.45, speed: 0.4 });
       try { this.sheet = localStorage.getItem(SHEET_KEY); } catch { this.sheet = null; }
       if (this.sheet !== 'modules' && this.sheet !== 'devices') this.sheet = null;
+      this.shownSheet = this.sheet;
       this.poll();
       setInterval(() => this.poll(), STATUS_POLL_MS);
       // Hidden tabs skip polls; on return, restart the stale clock and poll
@@ -61,14 +64,17 @@ function statusApp() {
     },
 
     async poll() {
-      if (document.hidden) return;
+      if (document.hidden || this.polling) return;
+      this.polling = true;
       try {
-        const res = await fetch('../api/overview');
+        const res = await fetch('../api/overview', { signal: AbortSignal.timeout(STATUS_POLL_MS) });
         if (!res.ok) throw new Error(String(res.status));
         this.data = await res.json();
         this.lastOkAt = Date.now();
       } catch {
         // keep the last snapshot; `stale` raises the alert bar
+      } finally {
+        this.polling = false;
       }
     },
 
@@ -119,7 +125,7 @@ function statusApp() {
              h.load ? `load ${h.load[0].toFixed(2)}` : ''),
         dial('mem', 'MEMORY', pct(h.mem_used, h.mem_total), 100, '%', this.history.mem, 0, 100,
              `${this.bytes(h.mem_used)} / ${this.bytes(h.mem_total)}`),
-        dial('temp', 'TEMP', h.temp_c, TEMP_MAX, '°C', this.history.temp, 30, TEMP_MAX,
+        dial('temp', 'TEMP', h.temp_c, TEMP_MAX, '°C', this.history.temp, 0, TEMP_MAX,
              h.temp_c == null ? 'no sensor' : h.temp_c >= 80 ? 'throttling range' : ''),
         dial('disk', 'DISK', pct(h.disk_used, h.disk_total), 100, '%', null, 0, 100,
              `${this.bytes(h.disk_used)} / ${this.bytes(h.disk_total)}`),
@@ -206,6 +212,16 @@ function statusApp() {
       if (s.kind === 'percent') return `${s.value}%`;
       return String(s.value);
     },
+    get deviceCountText() {
+      const listed = this.devices.filter((d) => d.listed);
+      const unlisted = this.devices.length - listed.length;
+      if (!listed.length) return unlisted ? `${unlisted} unlisted` : '0/0';
+      return this.countText(listed) + (unlisted ? ` · ${unlisted} unlisted` : '');
+    },
+    pingText(ms) {
+      if (ms == null) return '—';
+      return ms < 1 ? '<1 ms' : `${Math.round(ms * 10) / 10} ms`;
+    },
     countText(list) { return `${list.filter((x) => x.state === 'online').length}/${list.length}`; },
     moduleNote(m) { return m.enabled ? (m.last_api_call ? this.ago(m.last_api_call) : '') : 'off'; },
     deviceBars(d) {
@@ -219,7 +235,16 @@ function statusApp() {
     },
 
     // ---- sheets -----------------------------------------------------------
-    openSheet(name) { this.sheet = this.sheet === name ? null : name; this.poke(); this.saveSheet(); },
+    get sheetTitle() { return this.shownSheet === 'modules' ? 'MODULES' : 'DEVICES'; },
+    openSheet(name) {
+      this.sheet = this.sheet === name ? null : name;
+      if (this.sheet) {
+        this.shownSheet = this.sheet;
+        this.$nextTick(() => this.$refs.sheetClose?.focus());
+      }
+      this.poke();
+      this.saveSheet();
+    },
     closeSheet() { this.sheet = null; this.saveSheet(); },
     saveSheet() {
       try {

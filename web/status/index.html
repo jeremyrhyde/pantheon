@@ -12,7 +12,7 @@
   <script defer src="status.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 </head>
-<body class="hud" x-data="statusApp()" x-cloak @pointerdown="poke()">
+<body class="hud" x-data="statusApp()" x-cloak @pointerdown="poke()" @keydown="poke()" @keydown.escape.window="closeSheet()">
   <canvas class="starfield" x-ref="sky" aria-hidden="true"></canvas>
 
   <header class="hud-top">
@@ -98,7 +98,7 @@
   </main>
 
   <footer class="banners">
-    <button class="banner" type="button" @click="openSheet('modules')" :aria-expanded="sheet === 'modules'">
+    <button class="banner" type="button" @click="openSheet('modules')" aria-controls="status-sheet" :aria-expanded="sheet === 'modules'">
       <span class="banner__title">MODULES <b x-text="countText(modules.filter(m => m.enabled))"></b></span>
       <span class="banner__chips">
         <template x-for="m in modules" :key="m.name">
@@ -107,8 +107,8 @@
       </span>
       <span class="banner__more">▸</span>
     </button>
-    <button class="banner" type="button" @click="openSheet('devices')" :aria-expanded="sheet === 'devices'">
-      <span class="banner__title">DEVICES <b x-text="countText(devices.filter(d => d.listed))"></b></span>
+    <button class="banner" type="button" @click="openSheet('devices')" aria-controls="status-sheet" :aria-expanded="sheet === 'devices'">
+      <span class="banner__title">DEVICES <b x-text="deviceCountText"></b></span>
       <span class="banner__chips">
         <template x-for="d in devices" :key="d.name">
           <span class="chip"><span class="state-dot" :class="'state-dot--' + d.state"></span><span x-text="d.name"></span><span class="chip__note" x-text="d.issue ? '(' + d.issue + ')' : ''"></span></span>
@@ -120,14 +120,14 @@
   </footer>
 
   <div class="sheet-backdrop" x-show="sheet" x-transition:enter-start="is-hidden" x-transition:leave-end="is-hidden" @click="closeSheet()"></div>
-  <section class="sheet" x-show="sheet" x-transition:enter-start="is-hidden" x-transition:leave-end="is-hidden"
+  <section class="sheet" id="status-sheet" role="dialog" aria-modal="true" :aria-label="sheetTitle" x-show="sheet" x-transition:enter-start="is-hidden" x-transition:leave-end="is-hidden"
            @touchstart.passive="swipeStart($event)" @touchend="swipeEnd($event)">
     <header class="sheet__head">
-      <span x-text="sheet === 'modules' ? 'MODULES' : 'DEVICES'"></span>
-      <button class="sheet__close" type="button" @click="closeSheet()" aria-label="Close">✕</button>
+      <span x-text="sheetTitle"></span>
+      <button class="sheet__close" type="button" x-ref="sheetClose" @click="closeSheet()" aria-label="Close">✕</button>
     </header>
 
-    <div class="sheet__body" x-show="sheet === 'modules'">
+    <div class="sheet__body" x-show="shownSheet === 'modules'">
       <template x-for="m in modules" :key="m.name">
         <article class="card">
           <header class="card__head">
@@ -155,7 +155,7 @@
       </template>
     </div>
 
-    <div class="sheet__body" x-show="sheet === 'devices'">
+    <div class="sheet__body" x-show="shownSheet === 'devices'">
       <p class="card__summary" x-show="devices.length === 0">No devices yet — list them in devices.yaml, or install an edge kiosk with <code>make kiosk-install MODULE=… SERVER=…</code>.</p>
       <template x-for="d in devices" :key="d.name">
         <article class="card">
@@ -167,7 +167,7 @@
           </header>
           <dl class="kv">
             <dt>host</dt><dd x-text="d.host + (d.ip && d.ip !== d.host ? ' (' + d.ip + ')' : '')"></dd>
-            <dt>ping</dt><dd x-text="d.ping_ms != null ? d.ping_ms + ' ms' : '—'"></dd>
+            <dt>ping</dt><dd x-text="pingText(d.ping_ms)"></dd>
             <dt>heartbeat</dt><dd x-text="ago(d.last_heartbeat)"></dd>
             <dt>kiosk</dt><dd x-text="d.heartbeat ? (d.heartbeat.chromium_running ? 'running' : 'not running') : '—'"></dd>
             <dt>showing</dt><dd x-text="d.last_seen_module || '—'"></dd>
