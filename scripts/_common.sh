@@ -89,7 +89,11 @@ ensure_caddy() {
 detect_mode() {
   # Echoes "desktop" or "headless", honoring a caller-set $MODE other than "auto".
   if [[ "${MODE:-auto}" != "auto" ]]; then echo "$MODE"; return; fi
-  if systemctl get-default 2>/dev/null | grep -q graphical || [[ -n "${DISPLAY:-}" ]]; then
+  # graphical.target alone isn't enough: Ubuntu Server for Pi defaults to it
+  # with no desktop installed. A desktop means a display manager is present.
+  if [[ -n "${DISPLAY:-}" ]] \
+     || { systemctl get-default 2>/dev/null | grep -q graphical \
+          && systemctl cat display-manager.service >/dev/null 2>&1; }; then
     echo "desktop"
   else
     echo "headless"

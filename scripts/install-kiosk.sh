@@ -137,22 +137,27 @@ KIOSK_PKGS=(unclutter)
 # "package chromium-browser has no installation candidate" failure).
 if ! command -v chromium-browser >/dev/null 2>&1 \
      && ! command -v chromium >/dev/null 2>&1; then
+  # A fresh image has an empty apt index, so refresh once before giving up.
+  # Without Chromium the kiosk can't start: X exits as soon as it launches
+  # and tty1 auto-login loops on a bare console, so this is fatal.
   chromium_pkg=""
-  for cand in chromium-browser chromium; do
-    if apt-cache policy "$cand" 2>/dev/null \
-         | grep -q 'Candidate: [^(]'; then
-      chromium_pkg="$cand"
-      break
-    fi
+  for attempt in cached refreshed; do
+    if [[ "$attempt" == "refreshed" ]]; then sudo apt-get update -qq; fi
+    for cand in chromium-browser chromium; do
+      if apt-cache policy "$cand" 2>/dev/null \
+           | grep -q 'Candidate: [^(]'; then
+        chromium_pkg="$cand"
+        break 2
+      fi
+    done
   done
   if [[ -z "$chromium_pkg" ]]; then
-    echo "  WARNING: no chromium package candidate found (tried" \
-         "chromium-browser, chromium). Run 'sudo apt-get update' and" \
-         "check 'apt-cache policy chromium'." >&2
-  else
-    echo "  using chromium package: $chromium_pkg"
-    KIOSK_PKGS+=("$chromium_pkg")
+    echo "  ERROR: no chromium package candidate found (tried" \
+         "chromium-browser, chromium); check 'apt-cache policy chromium'." >&2
+    exit 1
   fi
+  echo "  using chromium package: $chromium_pkg"
+  KIOSK_PKGS+=("$chromium_pkg")
 fi
 ensure_apt_packages "${KIOSK_PKGS[@]}"
 
@@ -174,6 +179,25 @@ if [[ "$resolved_mode" == "headless" ]]; then
   ensure_apt_packages --no-recommends \
     xserver-xorg xserver-xorg-legacy xinit x11-xserver-utils \
     matchbox-window-manager
+  # On a Pi 4/5 under KMS the GPU is split across two DRM cards: v3d
+  # (render-only) and vc4 (the display). Bare Xorg can open the v3d one and
+  # die with "no screens found", so point it at the card that drives outputs.
+  for card in /sys/class/drm/card[0-9]; do
+    if [[ "$(basename "$(readlink -f "$card/device/driver")")" == "vc4-drm" ]]; then
+      echo "  pointing Xorg at /dev/dri/$(basename "$card") (vc4 display, sudo required)..."
+      sudo mkdir -p /etc/X11/xorg.conf.d
+      sudo tee /etc/X11/xorg.conf.d/99-pantheon-kms.conf >/dev/null <<EOF
+# Managed by scripts/install-kiosk.sh — use the vc4 display card, not v3d.
+Section "Device"
+  Identifier "vc4-kms"
+  Driver "modesetting"
+  Option "kmsdev" "/dev/dri/$(basename "$card")"
+EndSection
+EOF
+      break
+    fi
+  done
+
   render_unit "$PANTHEON_HOME/deploy/xinitrc.kiosk" "$USER_HOME/.xinitrc"
   chmod +x "$USER_HOME/.xinitrc"
 
