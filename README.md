@@ -54,7 +54,9 @@ What a module must do to join is in [docs/module-contract.md](docs/module-contra
 | [Pluto](https://github.com/jeremyrhyde/pluto) (private) | Team of workers analysing financial markets | 8004 | — | `/pluto/` | web server pending (`enabled: false`) |
 
 Each is a git submodule under `modules/`, tracking its `main` branch. Pluto
-is private: cloning it over HTTPS needs git credentials (`gh auth setup-git`).
+is private, and `.gitmodules` uses SSH URLs, so cloning the submodules needs
+an SSH key with access to the repos. An edge display clones without
+submodules and needs no key.
 
 ## Installation and connection
 
@@ -66,7 +68,7 @@ Linux/Raspberry Pi only (systemd user units).
 Runs every enabled module, Pantheon's app and the gateway.
 
 ```bash
-git clone --recurse-submodules git@github.com:jeremyrhyde/pantheon.git
+git clone --recurse-submodules https://github.com/jeremyrhyde/pantheon.git
 cd pantheon
 make setup-all build-all     # uv + deps for Pantheon and every module; writes modules.yaml
 make service-install-all     # module units + Pantheon + Caddy, all under pantheon.target
@@ -82,7 +84,7 @@ Open `http://<main-pi>:8000/`.
 Runs only Chromium, pointed at the main Pi. No modules, no uv, no Caddy.
 
 ```bash
-git clone git@github.com:jeremyrhyde/pantheon.git      # no submodules needed
+git clone https://github.com/jeremyrhyde/pantheon.git      # no submodules needed
 cd pantheon
 make kiosk-install MODULE=apollo SERVER=<main-pi-ip>   # omit MODULE for the home screen
 # Pi OS Lite / Ubuntu Server: make kiosk-install-headless MODULE=… SERVER=…

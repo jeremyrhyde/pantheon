@@ -5,7 +5,7 @@ Pantheon's domain.
 
 Present now:
 
-- `api.py` — `create_app()`, routers, static `/ui` mount, `/health`.
+- `api.py` — `create_app()`, routers, the UI served at `/` (mounted last), `/health`.
 
 Expected as Pantheon grows (see `hermes/core/` and `hestia/core/` for working
 versions to adapt):

@@ -6,4 +6,7 @@ Design documents, one pair per feature:
   non-goals.
 - `YYYY-MM-DD-<topic>-plan.md` — how: the ordered implementation steps.
 
+`module-contract.md` — the contract every module follows: ports, URL layout,
+`/health`.
+
 Start with the project's overall requirements spec.

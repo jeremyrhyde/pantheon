@@ -15,8 +15,10 @@
 
 [Unit]
 Description=Pantheon kiosk (Chromium fullscreen)
-After=graphical-session.target pantheon.service
-Wants=pantheon.service
+# The kiosk opens the gateway. On an edge Pi pantheon-gateway.service does not
+# exist; Wants= on a missing unit is harmless.
+After=graphical-session.target pantheon-gateway.service
+Wants=pantheon-gateway.service
 
 [Service]
 Type=simple
