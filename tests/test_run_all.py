@@ -30,13 +30,13 @@ def test_unknown_argument_is_rejected():
     assert "unknown arg" in out.stderr
 
 
-def test_missing_caddy_stops_before_launching(tmp_path):
+def test_missing_caddy_stops_before_launching(tmp_path, system_bin_without):
     # A PATH with uv but no caddy: the script must refuse before starting anything.
     uv = subprocess.run(["bash", "-c", "command -v uv || echo $HOME/.local/bin/uv"],
                         capture_output=True, text=True).stdout.strip()
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     (bin_dir / "uv").symlink_to(uv)
-    out = _run(env={"PATH": f"{bin_dir}:/usr/bin:/bin"})
+    out = _run(env={"PATH": f"{bin_dir}:{system_bin_without('caddy')}"})
     assert out.returncode == 1
     assert "caddy not found" in out.stderr
