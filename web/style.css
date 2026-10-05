@@ -65,6 +65,38 @@
   --safe-right:  env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left:   env(safe-area-inset-left, 0px);
+
+  /* Pantheon UI — home and status screens */
+  --color-space:      #05070c;
+  --color-ok:         #4ade80;
+  --color-bad:        #f87171;
+  --color-off:        #6e7681;
+  --color-hot:        #fb923c;
+  --color-glow:       #7dd3fc33;
+  --color-hud-edge:   #7dd3fc55;
+  --color-hud-panel:  #0b1018cc;
+  --color-hud-accent: #7dd3fc;
+  --color-hud-track:  #7dd3fc1f;
+  --color-star:       #e6edf3;
+  --color-star-cool:  #93c5fd;
+  --color-star-warm:  #fde68a;
+  --color-backdrop:   #05070c99;
+
+  --node-size: clamp(96px, 14vw, 160px);
+  --node-gap:  clamp(32px, 6vw, 96px);
+  --radius-node: 22%;
+  --dot-size: 14px;
+  --glow-sm: 6px;
+  --glow-md: 14px;
+  --glow-lg: 40px;
+  --tracking-wide: 0.18em;
+  --text-2xl: 2.25rem;
+  --text-3xl: 3rem;
+
+  --duration-float: 7s;
+  --duration-pulse: 1.6s;
+  --duration-leave: 400ms;
+  --duration-sheet: 260ms;
 }
 
 /* --------------------------------------------------------------- reset */
@@ -203,3 +235,28 @@ main {
 }
 
 .tile[aria-disabled="true"] { opacity: 0.5; }
+
+/* State dots — shared by the home and status screens. */
+.state-dot {
+  display: inline-block;
+  flex: none;
+  width: var(--dot-size);
+  height: var(--dot-size);
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--color-space);
+  background: var(--color-off);
+  color: var(--color-off);
+  box-shadow: 0 0 var(--glow-sm) currentColor;
+}
+.state-dot--online   { background: var(--color-ok);   color: var(--color-ok); }
+.state-dot--degraded,
+.state-dot--kiosk_issue { background: var(--color-warn); color: var(--color-warn); }
+.state-dot--offline  {
+  background: var(--color-bad);
+  color: var(--color-bad);
+  animation: state-dot-pulse var(--duration-pulse) ease-in-out infinite;
+}
+@keyframes state-dot-pulse { 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .state-dot--offline { animation: none; } }
+
+.starfield { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }

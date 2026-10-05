@@ -23,3 +23,25 @@ def test_web_ui_uses_only_relative_urls():
             if any(p.search(line) for p in _ABSOLUTE):
                 offenders.append(f"{f.relative_to(WEB)}:{n}: {line.strip()}")
     assert offenders == []
+
+
+STYLE = (WEB / "style.css").read_text(encoding="utf-8")
+
+
+def test_pantheon_ui_tokens_exist():
+    for token in ("--color-ok", "--color-bad", "--color-off", "--color-hot", "--color-space",
+                  "--color-star", "--color-hud-edge", "--node-size", "--dot-size",
+                  "--duration-float", "--duration-leave", "--duration-sheet"):
+        assert f"{token}:" in STYLE, token
+
+
+def test_state_dot_covers_every_state():
+    for state in ("online", "degraded", "kiosk_issue", "offline"):
+        assert f".state-dot--{state}" in STYLE, state
+
+
+def test_page_css_uses_tokens_not_literal_colours():
+    for css in ("home.css", "status/status.css"):
+        path = WEB / css
+        if path.exists():
+            assert not re.search(r"#[0-9a-fA-F]{3,8}\b|rgba?\(", path.read_text()), css
