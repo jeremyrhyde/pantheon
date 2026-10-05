@@ -26,8 +26,8 @@ cd "$PANTHEON_HOME"
 
 CADDY_BIN="$(command -v caddy || true)"
 if [[ -z "$CADDY_BIN" ]]; then
-  echo "caddy not found on PATH — get it from https://caddyserver.com/download" >&2
-  echo "(a single binary in ~/.local/bin is enough)." >&2
+  echo "caddy not found on PATH — run 'make caddy' (apt on Linux)," >&2
+  echo "or put a binary from https://caddyserver.com/download in ~/.local/bin." >&2
   exit 1
 fi
 if systemctl --user is-active --quiet "$GATEWAY_SERVICE_NAME" 2>/dev/null; then

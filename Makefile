@@ -1,7 +1,7 @@
 # Pantheon
 #
 # Common workflows wrapped as `make` targets. Run `make help` for the list.
-# Most targets shell out to `uv` — `make setup` installs it when missing.
+# Most targets shell out to `uv` — `make setup` installs it (and Caddy) when missing.
 
 # Resolve `uv`: prefer one already on PATH, else the location the official
 # installer drops it (~/.local/bin) on both Linux and macOS. Override with
@@ -30,7 +30,8 @@ help:
 	@echo "Pantheon — make targets"
 	@echo ""
 	@echo "Pipeline (Linux + macOS):"
-	@echo "  make setup            Ensure the uv toolchain is installed"
+	@echo "  make setup            Ensure uv and the Caddy gateway are installed"
+	@echo "  make caddy            Install Caddy only (apt on Linux)"
 	@echo "  make build            Sync deps into .venv and byte-compile sources"
 	@echo "  make run              Start the server in the foreground"
 	@echo "  -> full bootstrap:    make setup build run"
@@ -88,7 +89,7 @@ help:
 # setup — ensure the uv toolchain exists. Idempotent; uses the official
 # installer only when uv is missing, preferring curl and falling back to wget.
 .PHONY: setup
-setup: modules.yaml
+setup: modules.yaml caddy
 	@if [ -x "$(UV)" ] || command -v uv >/dev/null 2>&1; then \
 		echo "uv already present: $$($(UV) --version 2>/dev/null || echo $(UV))"; \
 	else \
@@ -103,6 +104,13 @@ setup: modules.yaml
 		fi; \
 		echo "uv installed to $(HOME)/.local/bin — ensure it is on your PATH."; \
 	fi
+
+# caddy — the gateway binary run-all and service-install-all need. Linux: apt
+# installs it if missing and its system-wide caddy.service is disabled (see
+# scripts/install-caddy.sh). macOS: prints how to install it.
+.PHONY: caddy
+caddy:
+	./scripts/install-caddy.sh
 
 # The per-host module registry, seeded from the committed example.
 modules.yaml:

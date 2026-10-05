@@ -86,11 +86,7 @@ do_install() {
   ./scripts/install-server.sh
 
   echo "[3/5] Caddy gateway..."
-  command -v caddy >/dev/null 2>&1 || ensure_apt_packages caddy
-  # apt's caddy enables a system-wide caddy.service on :80; Pantheon runs its
-  # own Caddy as a user unit instead.
-  sudo systemctl disable --now caddy.service 2>/dev/null || true
-  CADDY_BIN="$(command -v caddy)" || { echo "caddy not found after install" >&2; exit 1; }
+  ensure_caddy || exit 1
   mkdir -p build
   render caddyfile > build/Caddyfile.tmp
   mv build/Caddyfile.tmp build/Caddyfile

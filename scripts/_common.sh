@@ -63,6 +63,29 @@ ensure_apt_packages() {
   fi
 }
 
+ensure_caddy() {
+  # ensure_caddy — make `caddy` available and set CADDY_BIN. On Linux, apt
+  # installs it when missing; apt also enables a system-wide caddy.service
+  # that holds :80 and the admin port Pantheon's own gateway uses, so that is
+  # disabled (only when it is actually enabled or running — no needless sudo).
+  # Returns 1 when caddy can't be provided.
+  if ! command -v caddy >/dev/null 2>&1; then
+    if [[ "$OS" == "Linux" ]] && command -v dpkg >/dev/null 2>&1; then
+      ensure_apt_packages caddy
+    else
+      echo "caddy not found — install it (macOS: brew install caddy;" \
+           "elsewhere: https://caddyserver.com/download)." >&2
+      return 1
+    fi
+  fi
+  if [[ "$OS" == "Linux" ]] && { systemctl is-enabled --quiet caddy.service 2>/dev/null \
+       || systemctl is-active --quiet caddy.service 2>/dev/null; }; then
+    echo "  disabling the system-wide caddy.service (Pantheon runs its own gateway)..."
+    sudo systemctl disable --now caddy.service
+  fi
+  CADDY_BIN="$(command -v caddy)" || { echo "caddy not found after install" >&2; return 1; }
+}
+
 detect_mode() {
   # Echoes "desktop" or "headless", honoring a caller-set $MODE other than "auto".
   if [[ "${MODE:-auto}" != "auto" ]]; then echo "$MODE"; return; fi

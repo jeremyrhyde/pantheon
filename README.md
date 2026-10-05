@@ -165,7 +165,7 @@ make test
 
 To run the whole system in one terminal (every enabled module, Pantheon and
 the gateway, with tagged logs; Ctrl-C stops all), after `make setup-all
-build-all` and with [`caddy`](https://caddyserver.com/download) on your PATH:
+build-all` (`make setup` installs Caddy too — via apt on Linux, `brew install caddy` on macOS):
 
 ```bash
 make run-all                 # each app's `make run`  → http://localhost:8000/
