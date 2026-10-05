@@ -29,8 +29,10 @@ def test_list_modules_with_health(tmp_path):
     settings = Settings(
         _env_file=None, PORT=8010, GATEWAY_PORT=8000,
         MODULES_CONFIG_PATH=str(tmp_path / "modules.yaml"),
+        DEVICES_CONFIG_PATH=str(tmp_path / "devices.yaml"),
+        ACCESS_LOG_PATH=str(tmp_path / "access.log"),
     )
-    with TestClient(build_app(settings, transport=_transport())) as client:
+    with TestClient(build_app(settings, transport=_transport(), background=False)) as client:
         resp = client.get("/api/modules/")
     assert resp.status_code == 200
     assert resp.json() == [
