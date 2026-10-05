@@ -3,8 +3,10 @@
 #
 # Installs Chromium + unclutter, the pantheon-kiosk.service user unit, and —
 # on a headless base (Pi OS Lite / Ubuntu Server) — a minimal X stack plus
-# tty1 auto-login so the kiosk launches at boot. Run install-server.sh
-# first; the kiosk points Chromium at the local server.
+# tty1 auto-login so the kiosk launches at boot. On the main Pi, run
+# install-all.sh (or install-server.sh) first; the kiosk then points Chromium
+# at the local gateway. Edge displays use --server <main-pi> and need nothing
+# else installed.
 #
 # RECOMMENDED BASE OS: Raspberry Pi OS Lite (headless, no desktop). It ships
 # no display system, so --headless mode adds only a bare X stack + Chromium
@@ -33,8 +35,12 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --desktop)   MODE="desktop"; shift ;;
     --headless)  MODE="headless"; shift ;;
-    --module)    KIOSK_MODULE="${2:?--module needs a name}"; shift 2 ;;
-    --server)    KIOSK_SERVER="${2:?--server needs an IP or hostname}"; shift 2 ;;
+    --module)
+      if [[ $# -lt 2 || "$2" == --* ]]; then echo "--module needs a name" >&2; exit 2; fi
+      KIOSK_MODULE="$2"; shift 2 ;;
+    --server)
+      if [[ $# -lt 2 || "$2" == --* ]]; then echo "--server needs an IP or hostname" >&2; exit 2; fi
+      KIOSK_SERVER="$2"; shift 2 ;;
     --uninstall) ACTION="uninstall"; shift ;;
     -h|--help)   sed -n '3,21p' "$0" | sed 's/^# \?//'; exit 0 ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
@@ -43,6 +49,11 @@ done
 
 if [[ -n "$KIOSK_MODULE" && ! "$KIOSK_MODULE" =~ ^[a-z][a-z0-9-]*$ ]]; then
   echo "--module must be a module name like 'apollo'" >&2
+  exit 2
+fi
+
+if [[ -n "$KIOSK_SERVER" && ! "$KIOSK_SERVER" =~ ^[A-Za-z0-9.:-]+$ ]]; then
+  echo "--server must be an IP or hostname (letters, digits, '.', ':', '-')" >&2
   exit 2
 fi
 

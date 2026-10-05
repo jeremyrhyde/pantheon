@@ -260,7 +260,8 @@ service-restart-all:
 .PHONY: gateway-config
 gateway-config: modules.yaml
 	@mkdir -p build
-	$(PYTHON) -m services.render caddyfile > build/Caddyfile
+	$(PYTHON) -m services.render caddyfile > build/Caddyfile.tmp
+	@mv build/Caddyfile.tmp build/Caddyfile
 	@echo "Wrote build/Caddyfile"
 	@if systemctl --user is-active --quiet pantheon-gateway.service 2>/dev/null; then \
 		systemctl --user reload pantheon-gateway.service && echo "Reloaded the gateway."; \
