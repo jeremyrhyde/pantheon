@@ -29,6 +29,7 @@ case "${1:-}" in
 esac
 
 source "$(dirname "$0")/_common.sh"
+require_uv
 
 # ------------------------------------------------------------------ Linux
 linux() {
@@ -50,7 +51,7 @@ linux() {
       echo "[3/3] status"
       systemctl --user status "$SERVICE_NAME" --no-pager -l || true
       echo
-      echo "Server: http://$(hostname -I 2>/dev/null | awk '{print $1}'):8000/ui/"
+      echo "Pantheon app: http://localhost:8010/  (full install: http://$(hostname -I 2>/dev/null | awk '{print $1}'):8000/)"
       echo "Logs:   make service-logs"
       ;;
     uninstall)
@@ -81,7 +82,7 @@ macos() {
       echo "[3/3] status"
       launchctl print "$target/$LAUNCHD_LABEL" | grep -E '^\s*(state|pid) =' || true
       echo
-      echo "Server: http://localhost:8000/ui/"
+      echo "Server: http://localhost:8010/"
       echo "Logs:   make service-logs  ($LOG_DIR/pantheon.log)"
       ;;
     uninstall)

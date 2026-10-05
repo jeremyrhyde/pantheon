@@ -16,6 +16,8 @@
 #   ./scripts/install-kiosk.sh --desktop   # force desktop-session mode
 #   ./scripts/install-kiosk.sh --headless  # force headless (Pi OS Lite / Ubuntu Server)
 #   ./scripts/install-kiosk.sh --uninstall # remove the kiosk unit
+#   ./scripts/install-kiosk.sh --module apollo --server 192.168.1.50
+#                                          # edge display: one module, served by the main Pi
 #
 # Idempotent — running it twice is safe.
 
@@ -25,28 +27,36 @@ set -euo pipefail
 
 MODE="auto"
 ACTION="install"
+KIOSK_MODULE=""
+KIOSK_SERVER=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --desktop)   MODE="desktop"; shift ;;
     --headless)  MODE="headless"; shift ;;
+    --module)    KIOSK_MODULE="${2:?--module needs a name}"; shift 2 ;;
+    --server)    KIOSK_SERVER="${2:?--server needs an IP or hostname}"; shift 2 ;;
     --uninstall) ACTION="uninstall"; shift ;;
-    -h|--help)   sed -n '3,19p' "$0" | sed 's/^# \?//'; exit 0 ;;
+    -h|--help)   sed -n '3,21p' "$0" | sed 's/^# \?//'; exit 0 ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
 done
+
+if [[ -n "$KIOSK_MODULE" && ! "$KIOSK_MODULE" =~ ^[a-z][a-z0-9-]*$ ]]; then
+  echo "--module must be a module name like 'apollo'" >&2
+  exit 2
+fi
 
 source "$(dirname "$0")/_common.sh"
 
 if [[ "$OS" != "Linux" ]]; then
   echo "The kiosk is Linux/Raspberry Pi only (systemd + X + Chromium)." >&2
-  echo "On macOS, just open http://localhost:8000/ui/ in a browser." >&2
+  echo "On macOS, just open http://localhost:8000/ in a browser." >&2
   exit 1
 fi
 
 echo "Pantheon kiosk install"
 echo "  PANTHEON_HOME = $PANTHEON_HOME"
 echo "  USER        = $USER_NAME"
-echo "  UV_BIN      = $UV_BIN"
 
 # --- uninstall -------------------------------------------------------------
 
@@ -54,6 +64,7 @@ if [[ "$ACTION" == "uninstall" ]]; then
   echo "Uninstalling Pantheon kiosk unit..."
   systemctl --user disable --now pantheon-kiosk.service 2>/dev/null || true
   rm -f "$SYSTEMD_USER_DIR/pantheon-kiosk.service"
+  rm -f "$PANTHEON_HOME/kiosk.env"
   systemctl --user daemon-reload || true
   echo "Done. X stack / tty1 auto-login / .bash_profile changes left in place"
   echo "— remove manually if desired."
@@ -66,9 +77,11 @@ mkdir -p "$SYSTEMD_USER_DIR"
 
 # Warn (don't fail) if the server unit isn't installed — the kiosk points
 # Chromium at the local server, so it's near-useless without it.
-if [[ ! -f "$SYSTEMD_USER_DIR/pantheon.service" ]]; then
-  echo "  NOTE: pantheon.service not found — run ./scripts/install-server.sh"
-  echo "        first, or the kiosk will load a server that isn't running."
+if [[ -z "$KIOSK_SERVER" ]]; then
+  if [[ ! -f "$SYSTEMD_USER_DIR/pantheon.service" ]]; then
+    echo "  NOTE: pantheon.service not found — run ./scripts/install-server.sh"
+    echo "        first, or the kiosk will load a server that isn't running."
+  fi
 fi
 
 # 1. Install pantheon-kiosk.service.
@@ -77,6 +90,14 @@ echo "[1/4] writing pantheon-kiosk.service..."
 render_unit "$PANTHEON_HOME/web/kiosk/pantheon-kiosk.service" \
             "$SYSTEMD_USER_DIR/pantheon-kiosk.service"
 chmod +x "$PANTHEON_HOME/web/kiosk/start-kiosk.sh"
+
+# What this display opens; start-kiosk.sh sources it after .env.
+{
+  echo "# Written by scripts/install-kiosk.sh — re-run it to change what this display opens."
+  if [[ -n "$KIOSK_MODULE" ]]; then echo "KIOSK_MODULE=$KIOSK_MODULE"; fi
+  if [[ -n "$KIOSK_SERVER" ]]; then echo "SERVER_IP_ADDRESS=$KIOSK_SERVER"; fi
+} > "$PANTHEON_HOME/kiosk.env"
+echo "  kiosk opens: $(bash "$PANTHEON_HOME/web/kiosk/start-kiosk.sh" --print-url)"
 
 # 2. Install kiosk dependencies (chromium + unclutter, plus X stack if headless).
 echo

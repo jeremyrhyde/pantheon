@@ -68,8 +68,16 @@ help:
 	@echo ""
 	@echo "Kiosk display (Linux/Pi only; install the service first):"
 	@echo "  make kiosk-install            Auto-detect desktop vs headless"
+	@echo "    MODULE=apollo SERVER=<main-pi-ip>  Edge display showing one module"
 	@echo "  make kiosk-install-headless   Force headless (Pi OS Lite / Ubuntu Server)"
 	@echo "  make kiosk-uninstall          Remove the kiosk unit"
+	@echo ""
+	@echo "Full system on the main Pi (Linux only):"
+	@echo "  make service-install-all     Modules + Pantheon + Caddy gateway under pantheon.target"
+	@echo "  make service-uninstall-all   Stop and remove all of it"
+	@echo "  make service-status-all      One line per unit, with /health"
+	@echo "  make service-restart-all     Restart pantheon.target (every unit)"
+	@echo "  make gateway-config          Re-render build/Caddyfile and reload the gateway"
 
 # ---------------------------------------------------------------------------
 # Setup / build
@@ -227,16 +235,51 @@ service-restart:
 	./scripts/install-server.sh --restart
 
 # ---------------------------------------------------------------------------
+# Full system — gateway + Pantheon + every enabled module (see
+# scripts/install-all.sh). Linux/Pi only.
+# ---------------------------------------------------------------------------
+
+.PHONY: service-install-all
+service-install-all: modules.yaml
+	./scripts/install-all.sh
+
+.PHONY: service-uninstall-all
+service-uninstall-all:
+	./scripts/install-all.sh --uninstall
+
+.PHONY: service-status-all
+service-status-all:
+	./scripts/install-all.sh --status
+
+.PHONY: service-restart-all
+service-restart-all:
+	systemctl --user restart pantheon.target
+
+# Re-render the Caddyfile after editing modules.yaml routes/ports and reload
+# the running gateway. Enabling/disabling a module needs service-install-all.
+.PHONY: gateway-config
+gateway-config: modules.yaml
+	@mkdir -p build
+	$(PYTHON) -m services.render caddyfile > build/Caddyfile
+	@echo "Wrote build/Caddyfile"
+	@if systemctl --user is-active --quiet pantheon-gateway.service 2>/dev/null; then \
+		systemctl --user reload pantheon-gateway.service && echo "Reloaded the gateway."; \
+	fi
+
+# ---------------------------------------------------------------------------
 # Kiosk — see scripts/install-kiosk.sh (Linux/Pi only)
 # ---------------------------------------------------------------------------
 
+# MODULE=<name> opens one module; SERVER=<ip> points at the main Pi (edge display).
+KIOSK_ARGS = $(if $(MODULE),--module $(MODULE)) $(if $(SERVER),--server $(SERVER))
+
 .PHONY: kiosk-install
 kiosk-install:
-	./scripts/install-kiosk.sh
+	./scripts/install-kiosk.sh $(KIOSK_ARGS)
 
 .PHONY: kiosk-install-headless
 kiosk-install-headless:
-	./scripts/install-kiosk.sh --headless
+	./scripts/install-kiosk.sh --headless $(KIOSK_ARGS)
 
 .PHONY: kiosk-uninstall
 kiosk-uninstall:

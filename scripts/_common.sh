@@ -18,22 +18,30 @@ SERVICE_NAME="pantheon.service"
 KIOSK_SERVICE_NAME="pantheon-kiosk.service"
 LAUNCHD_LABEL="com.pantheon.server"
 
-UV_BIN="$(command -v uv || true)"
-if [[ -z "$UV_BIN" ]]; then
-  for cand in "$USER_HOME/.local/bin/uv" "$USER_HOME/.cargo/bin/uv"; do
-    [[ -x "$cand" ]] && UV_BIN="$cand" && break
-  done
-fi
-if [[ -z "$UV_BIN" ]]; then
-  echo "ERROR: 'uv' not found. Run 'make setup' first." >&2
-  exit 1
-fi
+GATEWAY_SERVICE_NAME="pantheon-gateway.service"
+
+UV_BIN=""
+require_uv() {
+  # require_uv — locate uv or exit. Only scripts that run uv call this, so the
+  # kiosk installer works on an edge Pi that has no uv.
+  UV_BIN="$(command -v uv || true)"
+  if [[ -z "$UV_BIN" ]]; then
+    for cand in "$USER_HOME/.local/bin/uv" "$USER_HOME/.cargo/bin/uv"; do
+      [[ -x "$cand" ]] && UV_BIN="$cand" && break
+    done
+  fi
+  if [[ -z "$UV_BIN" ]]; then
+    echo "ERROR: 'uv' not found. Run 'make setup' first." >&2
+    exit 1
+  fi
+}
 
 render_unit() {
-  # render_unit <src> <dest> — copy with @PANTHEON_HOME@/@UV_BIN@/@LOG_DIR@ filled in.
+  # render_unit <src> <dest> — copy with @PANTHEON_HOME@/@UV_BIN@/@CADDY_BIN@/@LOG_DIR@ filled in.
   sed \
     -e "s|@PANTHEON_HOME@|$PANTHEON_HOME|g" \
-    -e "s|@UV_BIN@|$UV_BIN|g" \
+    -e "s|@UV_BIN@|${UV_BIN:-}|g" \
+    -e "s|@CADDY_BIN@|${CADDY_BIN:-}|g" \
     -e "s|@LOG_DIR@|$LOG_DIR|g" \
     "$1" > "$2"
 }
