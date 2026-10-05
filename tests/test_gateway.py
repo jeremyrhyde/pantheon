@@ -14,6 +14,13 @@ EXPECTED = """\
 }
 
 :8000 {
+\tlog {
+\t\toutput file /run/user/1000/pantheon/access.log {
+\t\t\troll_size 5MiB
+\t\t\troll_keep 1
+\t\t}
+\t\tformat json
+\t}
 \tredir /apollo /apollo/ 308
 \thandle_path /apollo/* {
 \t\treverse_proxy localhost:8001
@@ -30,10 +37,18 @@ EXPECTED = """\
 
 
 def test_render_caddyfile():
-    assert render_caddyfile(MODULES, Settings(_env_file=None, PORT=8010, GATEWAY_PORT=8000)) == EXPECTED
+    assert render_caddyfile(MODULES, Settings(_env_file=None, PORT=8010, GATEWAY_PORT=8000,
+                                                  ACCESS_LOG_PATH="/run/user/1000/pantheon/access.log")) == EXPECTED
 
 
 def test_render_caddyfile_honours_ports():
-    out = render_caddyfile(ModulesConfig(), Settings(_env_file=None, PORT=9010, GATEWAY_PORT=9000))
+    out = render_caddyfile(ModulesConfig(), Settings(_env_file=None, PORT=9010, GATEWAY_PORT=9000,
+                                                   ACCESS_LOG_PATH="/run/user/1000/pantheon/access.log"))
     assert ":9000 {" in out
     assert "reverse_proxy localhost:9010" in out
+
+
+def test_relative_access_log_path_is_made_absolute():
+    from config import REPO_ROOT
+    out = render_caddyfile(ModulesConfig(), Settings(_env_file=None, ACCESS_LOG_PATH="build/x.log"))
+    assert f"output file {REPO_ROOT / 'build' / 'x.log'} {{" in out

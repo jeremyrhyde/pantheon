@@ -4,7 +4,8 @@ Each enabled module is proxied under /<name>/ with the prefix stripped, so
 the module sees the same paths it serves standalone. /<name> (no slash)
 redirects to /<name>/ so the module's relative URLs resolve. Disabled
 modules get a 503 notice instead of a proxy error; everything else goes to
-Pantheon's own app.
+Pantheon's own app. Every request is logged as JSON to `settings.access_log_path` for the
+status screen.
 """
 
 from __future__ import annotations
@@ -21,6 +22,14 @@ def render_caddyfile(modules: ModulesConfig, settings: Settings) -> str:
         "}",
         "",
         f":{settings.GATEWAY_PORT} {{",
+        # JSON access log for services/access_log.py (tmpfs by default).
+        "\tlog {",
+        f"\t\toutput file {settings.access_log_path} {{",
+        "\t\t\troll_size 5MiB",
+        "\t\t\troll_keep 1",
+        "\t\t}",
+        "\t\tformat json",
+        "\t}",
     ]
     for m in modules.modules:
         if m.enabled:
