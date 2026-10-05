@@ -30,6 +30,8 @@ from services.hoststats import HostSampler
 from services.module_monitor import ModuleMonitor
 from services.overview import record_host
 
+logger = logging.getLogger(__name__)
+
 
 def _configure_logging(level: str) -> None:
     logging.basicConfig(
@@ -49,7 +51,8 @@ def build_app(
 ) -> FastAPI:
     """`transport`, `host_sampler`, `ping` and `resolve` let tests stand in for
     the network and the hardware; `background=False` skips the repeating
-    loops (each collector still runs once at startup)."""
+    loops (each collector still runs once at startup, except the gateway
+    probe, which stays unknown (None) until the server is up)."""
     settings = settings or Settings()
     _configure_logging(settings.LOG_LEVEL)
 
@@ -91,7 +94,7 @@ def build_app(
                 except asyncio.CancelledError:
                     raise
                 except Exception:
-                    logging.getLogger(__name__).exception("collector gateway failed")
+                    logger.exception("collector gateway failed")
                 await run_every(settings.MODULE_POLL_SECONDS, poll_gateway, name="gateway")
 
             app.state.settings = settings
@@ -102,9 +105,13 @@ def build_app(
             app.state.devices = devices
             app.state.clock = time.time
 
-            await sample_host()
-            await poll_modules()
-            await devices.ping_round()
+            app.state.host = {}
+            # A failing first tick must not keep the server from starting.
+            for tick in (sample_host, poll_modules, devices.ping_round):
+                try:
+                    await tick()
+                except Exception:
+                    logger.exception("startup tick %s failed", getattr(tick, "__name__", tick))
 
             tasks: list[asyncio.Task[None]] = []
             if background:

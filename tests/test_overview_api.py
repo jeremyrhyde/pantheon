@@ -1,3 +1,5 @@
+import json
+
 import httpx
 from fastapi.testclient import TestClient
 
@@ -69,3 +71,38 @@ def test_module_icon(tmp_path):
         assert c.get("/api/modules/hermes/icon").status_code == 404
         assert c.get("/api/modules/pluto/icon").status_code == 404
         assert c.get("/api/modules/nope/icon").status_code == 404
+
+
+def test_heartbeat_hostname_over_64_chars_is_rejected(tmp_path):
+    with make(tmp_path, client=("192.168.1.42", 50000)) as c:
+        assert c.post("/api/devices/heartbeat", json={"hostname": "h" * 64, "chromium_running": True}).status_code == 200
+        assert c.post("/api/devices/heartbeat", json={"hostname": "h" * 65, "chromium_running": True}).status_code == 422
+
+
+def test_heartbeat_posts_do_not_count_as_device_traffic(tmp_path):
+    ip = "192.168.1.42"
+    with make(tmp_path, client=(ip, 50000)) as c:
+        assert c.post("/api/devices/heartbeat", json={"hostname": "edge", "chromium_running": True}).status_code == 200
+        line = json.dumps({"ts": 1000.0, "status": 200, "request": {
+            "uri": "/api/devices/heartbeat", "method": "POST", "client_ip": ip}}) + "\n"
+        (tmp_path / "access.log").write_text(line)
+        c.app.state.access_log.ingest(line)
+        device = c.get("/api/overview").json()["devices"][0]
+    assert device["host"] == ip and device["last_traffic"] is None
+
+
+def test_failing_host_sampler_does_not_abort_startup(tmp_path):
+    class Broken:
+        def sample(self):
+            raise RuntimeError("no sensors")
+
+    (tmp_path / "modules.yaml").write_text(YAML)
+    settings = Settings(_env_file=None, PORT=8010, GATEWAY_PORT=8000,
+                        MODULES_CONFIG_PATH=str(tmp_path / "modules.yaml"),
+                        DEVICES_CONFIG_PATH=str(tmp_path / "devices.yaml"),
+                        ACCESS_LOG_PATH=str(tmp_path / "access.log"))
+    app = build_app(settings, transport=transport(), host_sampler=Broken(), background=False)
+    with TestClient(app) as c:
+        res = c.get("/api/overview")
+        assert res.status_code == 200
+        assert res.json()["host"]["units"] == {"gateway": None}
