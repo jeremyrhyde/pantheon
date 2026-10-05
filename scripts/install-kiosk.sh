@@ -42,7 +42,7 @@ while [[ $# -gt 0 ]]; do
       if [[ $# -lt 2 || "$2" == --* ]]; then echo "--server needs an IP or hostname" >&2; exit 2; fi
       KIOSK_SERVER="$2"; shift 2 ;;
     --uninstall) ACTION="uninstall"; shift ;;
-    -h|--help)   sed -n '3,21p' "$0" | sed 's/^# \?//'; exit 0 ;;
+    -h|--help)   sed -n '3,24p' "$0" | sed 's/^# \?//'; exit 0 ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
 done
