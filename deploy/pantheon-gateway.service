@@ -1,0 +1,21 @@
+# Pantheon gateway — Caddy, the one address (:8000) for every module.
+# Installed by scripts/install-all.sh; config rendered by `make gateway-config`.
+
+[Unit]
+Description=Pantheon gateway (Caddy)
+After=network-online.target
+Wants=network-online.target
+PartOf=pantheon.target
+
+[Service]
+Type=simple
+WorkingDirectory=@PANTHEON_HOME@
+ExecStart=@CADDY_BIN@ run --config @PANTHEON_HOME@/build/Caddyfile --adapter caddyfile
+ExecReload=@CADDY_BIN@ reload --config @PANTHEON_HOME@/build/Caddyfile --adapter caddyfile
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=pantheon.target

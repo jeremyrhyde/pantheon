@@ -13,6 +13,7 @@
 Description=Pantheon server
 After=network-online.target
 Wants=network-online.target
+PartOf=pantheon.target
 
 [Service]
 Type=simple
