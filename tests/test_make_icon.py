@@ -33,3 +33,13 @@ def test_wing_renders_deterministically(tmp_path):
         subprocess.run([sys.executable, str(SCRIPT), "wing", str(tmp_path / d), "w.png:128"],
                        check=True)
     assert (tmp_path / "one" / "w.png").read_bytes() == (tmp_path / "two" / "w.png").read_bytes()
+
+
+import pytest
+
+
+@pytest.mark.parametrize("glyph", ["sun", "hermes", "flame", "bident", "wing"])
+def test_every_module_glyph_renders(tmp_path, glyph):
+    subprocess.run([sys.executable, str(SCRIPT), glyph, str(tmp_path), "g.png:64"], check=True)
+    with Image.open(tmp_path / "g.png") as img:
+        assert img.size == (64, 64) and img.mode == "RGBA"
