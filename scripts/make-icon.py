@@ -89,10 +89,17 @@ def main(argv: list[str]) -> int:
         return 2
     image = draw(argv[0])
     out_dir = Path(argv[1])
-    out_dir.mkdir(parents=True, exist_ok=True)
+    specs = []
     for spec in argv[2:]:
         name, _, size = spec.partition(":")
-        image.resize((int(size), int(size)), Image.LANCZOS).save(out_dir / name)
+        if not name or not size.isdigit() or int(size) < 1:
+            print(f"bad size spec {spec!r} (want file:size)", file=sys.stderr)
+            print(__doc__, file=sys.stderr)
+            return 2
+        specs.append((name, int(size)))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for name, size in specs:
+        image.resize((size, size), Image.LANCZOS).save(out_dir / name)
         print(f"wrote {out_dir / name}")
     return 0
 

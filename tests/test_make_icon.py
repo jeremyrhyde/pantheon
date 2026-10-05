@@ -19,3 +19,17 @@ def test_writes_each_size(tmp_path):
 def test_rejects_unknown_glyph(tmp_path):
     done = subprocess.run([sys.executable, str(SCRIPT), "nope", str(tmp_path), "a.png:32"])
     assert done.returncode == 2
+
+
+def test_rejects_malformed_size_spec(tmp_path):
+    for spec in ("a.png", "a.png:big", "a.png:0", "a.png:-3"):
+        done = subprocess.run([sys.executable, str(SCRIPT), "sun", str(tmp_path), spec],
+                              capture_output=True)
+        assert done.returncode == 2 and done.stderr, spec
+
+
+def test_wing_renders_deterministically(tmp_path):
+    for d in ("one", "two"):
+        subprocess.run([sys.executable, str(SCRIPT), "wing", str(tmp_path / d), "w.png:128"],
+                       check=True)
+    assert (tmp_path / "one" / "w.png").read_bytes() == (tmp_path / "two" / "w.png").read_bytes()

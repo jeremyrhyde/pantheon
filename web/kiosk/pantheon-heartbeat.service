@@ -3,8 +3,8 @@
 
 [Unit]
 Description=Pantheon heartbeat (tells the main Pi this display is alive)
-After=network-online.target
 
 [Service]
 Type=oneshot
+TimeoutStartSec=30
 ExecStart=@PANTHEON_HOME@/web/kiosk/heartbeat.sh

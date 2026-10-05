@@ -23,6 +23,8 @@ def run_agent(
     vcgencmd_out: str = "throttled=0x50000",
     hostname: str = "edge-1",
     second_stat: str | None = None,
+    temp: str = "51234",
+    proc_hostname: str = "proc-host",
 ) -> dict:
     repo = tmp_path / "repo"
     (repo / "web" / "kiosk").mkdir(parents=True)
@@ -37,13 +39,16 @@ def run_agent(
     (root / "proc" / "uptime").write_text("3600.42 100.0\n")
     zone = root / "sys" / "class" / "thermal" / "thermal_zone0"
     zone.mkdir(parents=True)
-    (zone / "temp").write_text("51234\n")
+    (zone / "temp").write_text(temp + "\n")
+    (root / "proc" / "sys" / "kernel").mkdir(parents=True)
+    (root / "proc" / "sys" / "kernel" / "hostname").write_text(proc_hostname + "\n")
 
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     _exe(bin_dir / "pgrep", "exit 0" if chromium else "exit 1")
     _exe(bin_dir / "vcgencmd", f'echo "{vcgencmd_out}"')
-    _exe(bin_dir / "hostname", f'echo "{hostname}"')
+    (tmp_path / "hostname.txt").write_text(hostname)
+    _exe(bin_dir / "hostname", f'cat "{tmp_path / "hostname.txt"}"')
     if second_stat is not None:
         # The agent's gap between the two CPU reads: change /proc/stat there.
         _exe(bin_dir / "sleep", f'echo "{second_stat}" > "{root}/proc/stat"')
@@ -102,3 +107,25 @@ def test_long_hostname_is_truncated_to_64(tmp_path):
     body = run_agent(tmp_path, chromium=True, hostname="h" * 100)
     assert body["hostname"] == "h" * 64
     Heartbeat.model_validate(body)
+
+
+def test_normal_cpu_delta(tmp_path):
+    # total 1000 → 1100 (+100), idle 800 → 875 (+75): 25 % busy.
+    body = run_agent(tmp_path, chromium=True, second_stat="cpu  125 0 100 875 0 0 0 0 0 0")
+    assert body["cpu_percent"] == 25.0
+
+
+def test_hostname_with_tab_and_quote_is_valid_json(tmp_path):
+    from schemas.devices import Heartbeat
+    body = run_agent(tmp_path, chromium=True, hostname='a\tb"c')
+    assert body["hostname"] == 'a\tb"c'
+    Heartbeat.model_validate(body)
+
+
+def test_temp_out_of_range_is_null(tmp_path):
+    assert run_agent(tmp_path / "hot", chromium=True, temp="200000")["temp_c"] is None
+    assert run_agent(tmp_path / "cold", chromium=True, temp="-50000")["temp_c"] is None
+
+
+def test_empty_hostname_falls_back_to_proc(tmp_path):
+    assert run_agent(tmp_path, chromium=True, hostname="")["hostname"] == "proc-host"
