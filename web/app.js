@@ -1,26 +1,60 @@
-/* Pantheon UI — Alpine.js component state for index.html (x-data="app()").
- * Placeholder home screen: one tile per registered module. All URLs are
- * relative, so this works at :8010/ and behind the gateway at :8000/. */
+/* Pantheon home screen — the modules floating in a starfield.
+ * Everything comes from api/overview (relative, so this page works at :8010/
+ * and behind the gateway at :8000/); `from=home` tells the access log this
+ * screen apart from the status screen. */
 
-function app() {
+const HOME_POLL_MS = 10_000;
+const LEAVE_MS = 400; // matches --duration-leave
+
+function homeApp() {
   return {
-    tab: 'home',
-    healthy: false,
     modules: [],
+    overall: 'offline',
+    loaded: false,
+    broken: {},
+    chosen: null,
+    leaving: false,
+    clock: '',
+    date: '',
 
-    async init() {
-      await this.refresh();
-      setInterval(() => this.refresh(), 10_000);
+    init() {
+      startStarfield(this.$refs.sky, { dim: 1, speed: 1 });
+      this.tick();
+      setInterval(() => this.tick(), 1000);
+      this.refresh();
+      setInterval(() => this.refresh(), HOME_POLL_MS);
+      // Coming back with the browser's Back button restores this page as it
+      // was left — mid-zoom. Reset it.
+      window.addEventListener('pageshow', (e) => {
+        if (e.persisted) { this.leaving = false; this.chosen = null; }
+      });
+    },
+
+    tick() {
+      const now = new Date();
+      this.clock = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      this.date = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
     },
 
     async refresh() {
       try {
-        const [health, modules] = await Promise.all([fetch('health'), fetch('api/modules/')]);
-        this.healthy = health.ok;
-        if (modules.ok) this.modules = await modules.json();
+        const res = await fetch('api/overview?from=home');
+        if (!res.ok) throw new Error(String(res.status));
+        const data = await res.json();
+        this.overall = data.overall;
+        this.modules = data.modules.map((m) => ({ ...m, icon: `api/modules/${m.name}/icon` }));
       } catch {
-        this.healthy = false;
+        this.overall = 'offline';
+      } finally {
+        this.loaded = true;
       }
+    },
+
+    open(m) {
+      if (!m.enabled || this.leaving) return;
+      this.chosen = m.name;
+      this.leaving = true;
+      setTimeout(() => { window.location.href = m.path; }, LEAVE_MS);
     },
   };
 }

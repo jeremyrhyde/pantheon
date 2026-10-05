@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0d1117">
+  <meta name="theme-color" content="#05070c">
   <title>Pantheon</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="manifest" href="manifest.webmanifest">
@@ -11,49 +11,42 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Pantheon">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="home.css">
+  <script defer src="starfield.js"></script>
   <script defer src="app.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 </head>
-<body x-data="app()" x-cloak>
+<body class="home" x-data="homeApp()" x-cloak>
+  <canvas class="starfield" x-ref="sky" aria-hidden="true"></canvas>
 
-  <header class="topbar">
-    <h1 class="brand">Pantheon</h1>
-    <span class="status" :class="healthy ? 'online' : 'offline'">
-      <span class="dot" aria-hidden="true"></span>
-      <span x-text="healthy ? 'online' : 'offline'"></span>
-    </span>
-  </header>
+  <div class="corner corner--tl">
+    <div class="home-clock" x-text="clock"></div>
+    <div class="home-date" x-text="date"></div>
+  </div>
 
-  <!-- Tabs — add a button + a matching <section> to grow the UI. -->
-  <nav class="tabs" role="tablist">
-    <button role="tab" :aria-selected="tab === 'home'"
-            :class="{ active: tab === 'home' }"
-            @click="tab = 'home'">Home</button>
-    <button role="tab" :aria-selected="tab === 'settings'"
-            :class="{ active: tab === 'settings' }"
-            @click="tab = 'settings'">Settings</button>
-  </nav>
+  <a class="corner corner--tr wordmark" href="status/" aria-label="Pantheon status">
+    <span>PANTHEON</span>
+    <span class="state-dot" :class="'state-dot--' + overall"></span>
+  </a>
 
-  <main>
-    <section x-show="tab === 'home'" role="tabpanel" class="panel">
-      <div class="tiles">
-        <template x-for="m in modules" :key="m.name">
-          <a class="card tile" :href="m.enabled ? m.path : null" :aria-disabled="!m.enabled">
-            <div class="card-label" x-text="m.title"></div>
-            <span class="status" :class="m.healthy ? 'online' : 'offline'">
-              <span class="dot" aria-hidden="true"></span>
-              <span x-text="!m.enabled ? 'not available' : (m.healthy ? 'online' : 'offline')"></span>
-            </span>
-          </a>
-        </template>
-      </div>
-      <div class="empty" x-show="modules.length === 0">No modules registered — see modules.yaml.</div>
-    </section>
-
-    <section x-show="tab === 'settings'" role="tabpanel" class="panel">
-      <div class="empty">Nothing to configure yet.</div>
-    </section>
+  <main class="constellation" :class="{ 'is-leaving': leaving }">
+    <template x-for="(m, i) in modules" :key="m.name">
+      <a class="node" :href="m.enabled ? m.path : null"
+         :aria-disabled="!m.enabled" :aria-label="m.title + ' — ' + m.state"
+         :class="{ 'is-chosen': chosen === m.name, 'is-disabled': !m.enabled }"
+         :style="`--float-delay: ${i * -1.7}s`"
+         @click.prevent="open(m)">
+        <span class="node__halo">
+          <img class="node__icon" :src="m.icon" alt="" x-show="!broken[m.name]"
+               @error="broken[m.name] = true">
+          <span class="node__initial" x-show="broken[m.name]" x-text="m.title.charAt(0)"></span>
+          <span class="state-dot node__dot" :class="'state-dot--' + m.state"></span>
+        </span>
+        <span class="node__name" x-text="m.title"></span>
+      </a>
+    </template>
   </main>
 
+  <p class="home-empty" x-show="loaded && modules.length === 0">No modules registered — see modules.yaml.</p>
 </body>
 </html>
