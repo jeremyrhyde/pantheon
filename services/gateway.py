@@ -32,7 +32,8 @@ def render_caddyfile(modules: ModulesConfig, settings: Settings) -> str:
             ]
         else:
             lines += [
-                f"\thandle /{m.name}* {{",
+                f"\t@{m.name} path /{m.name} /{m.name}/*",
+                f"\thandle @{m.name} {{",
                 f'\t\trespond "{m.title} is not available on this server." 503',
                 "\t}",
             ]

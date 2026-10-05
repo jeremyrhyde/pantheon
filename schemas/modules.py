@@ -27,6 +27,18 @@ class ModuleEntry(BaseModel):
             raise ValueError(f"module name {value!r} must match {_NAME.pattern}")
         return value
 
+    @field_validator("title")
+    @classmethod
+    def _quote_safe(cls, value: str) -> str:
+        # Interpolated into a quoted Caddyfile string by services/gateway.py.
+        if not value.strip():
+            raise ValueError("module title must not be empty")
+        if any(c in value for c in '"\\\n\r'):
+            raise ValueError(
+                f"module title must not contain quotes, backslashes or newlines: {value!r}"
+            )
+        return value
+
     @property
     def path(self) -> str:
         """Gateway path, relative (no leading slash) per the module contract."""

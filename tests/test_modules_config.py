@@ -11,7 +11,7 @@ def _settings(tmp_path: Path, yaml_text: str | None) -> Settings:
     path = tmp_path / "modules.yaml"
     if yaml_text is not None:
         path.write_text(yaml_text)
-    return Settings(_env_file=None, MODULES_CONFIG_PATH=str(path))
+    return Settings(_env_file=None, PORT=8010, GATEWAY_PORT=8000, MODULES_CONFIG_PATH=str(path))
 
 
 def test_defaults(monkeypatch):
@@ -43,6 +43,10 @@ def test_example_file_loads():
     ("modules:\n  - {name: a, title: A, port: 8001}\n  - {name: b, title: B, port: 8001}\n",
      "duplicate module port: 8001"),
     ("modules:\n  - {name: Bad Name, title: A, port: 8001}\n", "must match"),
+    ('modules:\n  - {name: a, title: "", port: 8001}\n', "title must not be empty"),
+    ('modules:\n  - {name: a, title: "A\\"B", port: 8001}\n', "title must not contain"),
+    ('modules:\n  - {name: a, title: "A\\\\B", port: 8001}\n', "title must not contain"),
+    ('modules:\n  - {name: a, title: "A\\nB", port: 8001}\n', "title must not contain"),
     ("modules:\n  - {name: a, title: A, port: 8010}\n", "clashes with Pantheon's PORT"),
     ("modules:\n  - {name: a, title: A, port: 8000}\n", "clashes with Pantheon's GATEWAY_PORT"),
 ])

@@ -18,7 +18,8 @@ EXPECTED = """\
 \thandle_path /apollo/* {
 \t\treverse_proxy localhost:8001
 \t}
-\thandle /pluto* {
+\t@pluto path /pluto /pluto/*
+\thandle @pluto {
 \t\trespond "Pluto is not available on this server." 503
 \t}
 \thandle {

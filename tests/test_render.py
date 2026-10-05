@@ -13,7 +13,9 @@ YAML = (
 @pytest.fixture
 def settings(tmp_path):
     (tmp_path / "modules.yaml").write_text(YAML)
-    return Settings(_env_file=None, MODULES_CONFIG_PATH=str(tmp_path / "modules.yaml"))
+    return Settings(
+        _env_file=None, PORT=8010, GATEWAY_PORT=8000, MODULES_CONFIG_PATH=str(tmp_path / "modules.yaml")
+    )
 
 
 def test_modules_lists_enabled_names_and_ports(settings):
