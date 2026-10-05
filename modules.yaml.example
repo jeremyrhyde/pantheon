@@ -13,7 +13,7 @@ modules:
   - name: hermes
     title: Hermes
     port: 8002
-    icon: modules/hermes/web/icon-512.png
+    icon: modules/hermes/frontend/public/icon-512.png
     enabled: true
   - name: hestia
     title: Hestia
