@@ -88,3 +88,46 @@ def test_ingest_prunes_old_requests_without_a_reader(tmp_path):
     log.ingest(line("/apollo/api/a", ts=100))
     log.ingest(line("/apollo/api/b", ts=200))
     assert len(log._activity["apollo"].requests) == 1
+
+
+async def test_follow_completes_a_partial_line_across_rotation(tmp_path):
+    path = tmp_path / "access.log"
+    path.write_text("")
+    log = AccessLog(path, {"apollo"}, clock=lambda: 1000.0)
+    task = asyncio.create_task(log.follow(poll_s=0.2))
+    await asyncio.sleep(0.05)
+    full = line("/apollo/api/split", ts=990)
+    with path.open("a") as f:
+        f.write(full[:20])
+    await asyncio.sleep(0.3)                    # follower holds the fragment
+    with path.open("a") as f:
+        f.write(full[20:])
+    path.rename(tmp_path / "access-1.log")
+    path.write_text("")
+    await asyncio.sleep(0.4)
+    task.cancel()
+    assert log.module_activity("apollo")["last_api_call"] == 990.0
+
+
+async def test_follow_survives_the_file_vanishing_mid_rotation(tmp_path, monkeypatch):
+    path = tmp_path / "access.log"
+    path.write_text("")
+    log = AccessLog(path, {"apollo"}, clock=lambda: 1000.0)
+    task = asyncio.create_task(log.follow(poll_s=0.02))
+    await asyncio.sleep(0.05)
+    real_open = open
+    boom = [True]
+
+    def flaky(*a, **k):
+        if boom[0]:
+            boom[0] = False
+            raise FileNotFoundError
+        return real_open(*a, **k)
+
+    monkeypatch.setattr("builtins.open", flaky)
+    path.rename(tmp_path / "access-1.log")
+    path.write_text(line("/apollo/api/after", ts=995))
+    await asyncio.sleep(0.2)
+    assert not task.done()
+    task.cancel()
+    assert log.module_activity("apollo")["last_api_call"] == 995.0

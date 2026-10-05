@@ -12,12 +12,15 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import time
 from collections import deque
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 HEARTBEAT_PATH = "/api/devices/heartbeat"
 _WINDOW_S = 60.0
@@ -121,6 +124,7 @@ class AccessLog:
         inode = None
         skip_existing = True
         partial = ""
+        warned = False
         try:
             while True:
                 try:
@@ -129,6 +133,7 @@ class AccessLog:
                         if handle is not None:
                             self._drain(handle, partial)
                             handle.close()
+                            handle = None
                         handle = open(self._path, encoding="utf-8", errors="replace")
                         if skip_existing:
                             handle.seek(0, os.SEEK_END)
@@ -137,6 +142,10 @@ class AccessLog:
                     partial = self._drain(handle, partial)
                 except FileNotFoundError:
                     pass
+                except (OSError, ValueError):
+                    if not warned:
+                        logger.warning("access log %s: read failed; retrying", self._path, exc_info=True)
+                        warned = True
                 skip_existing = False
                 await asyncio.sleep(poll_s)
         finally:

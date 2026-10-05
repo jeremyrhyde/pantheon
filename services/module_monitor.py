@@ -61,6 +61,9 @@ class ModuleMonitor:
         started = time.perf_counter()
         if not await self._get_ok(f"http://localhost:{module.port}/health"):
             probe.failures += 1
+            if probe.failures >= 2:
+                probe.status = None
+                probe.latency_ms = None
             return
         probe.failures = 0
         probe.ever_ok = True

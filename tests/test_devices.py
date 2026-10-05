@@ -65,6 +65,8 @@ async def test_unlisted_device_appears_from_its_heartbeat(tmp_path):
     row = w.row("bath-pi")
     assert row["listed"] is False and row["host"] == "10.0.0.99"
     assert row["heartbeat"]["hostname"] == "bath-pi"
+    w.devices.record_heartbeat("10.0.0.99", Heartbeat(hostname="renamed", chromium_running=True))
+    assert w.row("renamed")["host"] == "10.0.0.99"
 
 
 async def test_transitions_are_capped_at_20(tmp_path):
@@ -73,3 +75,21 @@ async def test_transitions_are_capped_at_20(tmp_path):
         w.pingable = {"10.0.0.42"} if i % 2 else set()
         await w.devices.ping_round()
     assert len(w.row()["transitions"]) == 20
+
+
+async def test_heartbeat_before_first_resolve_is_adopted_not_duplicated(tmp_path):
+    w = World(tmp_path)
+    answers = iter([None, "10.0.0.42"])
+
+    async def resolve(host):
+        return next(answers)
+
+    w.devices._resolve = resolve
+    w.devices._listed[0].host = "bath.local"
+    await w.devices.ping_round()
+    w.beat()                                    # arrives while the name is unresolved
+    assert len(w.devices.snapshot()) == 2
+    await w.devices.ping_round()
+    rows = w.devices.snapshot()
+    assert len(rows) == 1 and rows[0]["listed"] is True
+    assert rows[0]["heartbeat"]["hostname"] == "bath-pi"

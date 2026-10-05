@@ -101,6 +101,10 @@ class DeviceMonitor:
             device.ip = await self._resolve(device.host) or device.ip
             device.ping_ms = await self._ping(device.ip) if device.ip else None
             device.ping_ok = device.ping_ms is not None
+            ghost = self._unlisted.pop(device.ip, None) if device.ip else None
+            if ghost is not None and ghost.heartbeat is not None:
+                if device.heartbeat_at is None or (ghost.heartbeat_at or 0) > device.heartbeat_at:
+                    device.heartbeat, device.heartbeat_at = ghost.heartbeat, ghost.heartbeat_at
 
         await asyncio.gather(*(one(d) for d in self._listed))
         self.refresh()
@@ -112,6 +116,8 @@ class DeviceMonitor:
             if device is None:
                 device = _Device(heartbeat.hostname, ip, None, False, ip=ip)
                 self._unlisted[ip] = device
+        if not device.listed:
+            device.name = heartbeat.hostname
         device.heartbeat = heartbeat
         device.heartbeat_at = self._clock()
         self.refresh()

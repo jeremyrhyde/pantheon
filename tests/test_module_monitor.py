@@ -78,3 +78,50 @@ async def test_gateway_probe():
     async with client:
         await m.poll_gateway(8000)
     assert m.gateway_ok is True
+
+
+async def test_api_status_error_is_degraded():
+    m, client = monitor(ok_health({"state": "error", "stats": []}, 200))
+    async with client:
+        await m.poll_once()
+    assert m.state(A) == "degraded"
+
+
+async def test_recovers_to_online_after_one_miss():
+    up = [True]
+
+    def handler(request):
+        if not up[0]:
+            raise httpx.ConnectError("down", request=request)
+        return httpx.Response(200 if request.url.path == "/health" else 404)
+
+    m, client = monitor(handler)
+    async with client:
+        await m.poll_once()
+        up[0] = False
+        await m.poll_once()
+        assert m.state(A) == "degraded"
+        up[0] = True
+        await m.poll_once()
+    assert m.state(A) == "online"
+
+
+async def test_offline_clears_stale_status_and_latency():
+    up = [True]
+
+    def handler(request):
+        if not up[0]:
+            raise httpx.ConnectError("down", request=request)
+        if request.url.path == "/health":
+            return httpx.Response(200)
+        return httpx.Response(200, json={"state": "ok", "stats": [{"label": "x", "value": 1}]})
+
+    m, client = monitor(handler)
+    async with client:
+        await m.poll_once()
+        assert m.snapshot(A)["status"] is not None
+        up[0] = False
+        await m.poll_once()
+        await m.poll_once()
+    snap = m.snapshot(A)
+    assert snap["state"] == "offline" and snap["status"] is None and snap["latency_ms"] is None
