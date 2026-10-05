@@ -31,3 +31,5 @@ node_modules/
 
 # ---- pantheon-specific ----
 .claude/
+modules.yaml
+kiosk.env

@@ -13,7 +13,7 @@ PYTEST := $(UV) run pytest
 # Host/port for run-dev and the live checks. `make run` and the background
 # service read HOST/PORT from config.Settings (the environment / .env) instead.
 HOST ?= 0.0.0.0
-PORT ?= 8000
+PORT ?= 8010
 PANTHEON_HOST ?= http://localhost:$(PORT)
 
 # Submodules under modules/, in the order the *-all targets visit them.
@@ -78,7 +78,7 @@ help:
 # setup — ensure the uv toolchain exists. Idempotent; uses the official
 # installer only when uv is missing, preferring curl and falling back to wget.
 .PHONY: setup
-setup:
+setup: modules.yaml
 	@if [ -x "$(UV)" ] || command -v uv >/dev/null 2>&1; then \
 		echo "uv already present: $$($(UV) --version 2>/dev/null || echo $(UV))"; \
 	else \
@@ -93,6 +93,10 @@ setup:
 		fi; \
 		echo "uv installed to $(HOME)/.local/bin — ensure it is on your PATH."; \
 	fi
+
+# The per-host module registry, seeded from the committed example.
+modules.yaml:
+	cp modules.yaml.example modules.yaml
 
 # build — sync locked deps into .venv, then byte-compile the sources so a
 # syntax error fails the build on any platform.

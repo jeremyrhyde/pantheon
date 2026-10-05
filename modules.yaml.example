@@ -1,0 +1,22 @@
+# Pantheon module registry. Copy to modules.yaml (gitignored; `make setup`
+# does it) and edit per host. Each module is reached at
+# http://<this-host>:$GATEWAY_PORT/<name>/ and runs as <name>.service from
+# modules/<name>. After editing: `make service-install-all` (to add/remove
+# units) or just `make gateway-config` (to re-route).
+modules:
+  - name: apollo
+    title: Apollo
+    port: 8001
+    enabled: true
+  - name: hermes
+    title: Hermes
+    port: 8002
+    enabled: true
+  - name: hestia
+    title: Hestia
+    port: 8003
+    enabled: true
+  - name: pluto
+    title: Pluto
+    port: 8004
+    enabled: false   # no web server yet
