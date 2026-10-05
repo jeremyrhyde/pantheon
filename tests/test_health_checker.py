@@ -40,3 +40,15 @@ async def test_results_are_cached_for_ttl():
         now[0] += 6.0
         await checker.check(UP)
         assert calls == [8001, 8001]
+
+
+async def test_any_probe_failure_marks_only_that_module_unhealthy():
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.port == 8001:
+            return httpx.Response(200)
+        raise RuntimeError("client is closing")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        checker = HealthChecker(client, timeout=0.5)
+        assert await checker.check(ERR) is False
+        assert await checker.check(UP) is True

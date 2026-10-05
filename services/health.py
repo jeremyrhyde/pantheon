@@ -37,7 +37,7 @@ class HealthChecker:
                 f"http://localhost:{module.port}/health", timeout=self._timeout
             )
             healthy = response.status_code == 200
-        except httpx.HTTPError:
+        except Exception:  # one module's odd failure must not 500 the whole list
             healthy = False
         self._cache[module.name] = (now, healthy)
         return healthy
