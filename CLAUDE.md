@@ -3,9 +3,10 @@
 ## Status
 
 Pantheon fronts four modules through a Caddy gateway (`:8000/<module>/`),
-groups their units under `pantheon.target`, and shows a placeholder home
-screen. The unified UI is not designed yet. Pluto's web server is pending
-(registered, `enabled: false`).
+groups their units under `pantheon.target`, and shows a starfield home
+screen and a HUD status screen (`/status/`) fed by in-memory collectors
+(`services/`), edge heartbeats and optional module `/api/status`. Pluto's web
+server is pending (registered, `enabled: false`).
 
 ## Modules
 
@@ -29,6 +30,7 @@ each its own repo with its own `make setup build run test clean`. Pantheon's
   hestia 8003, pluto 8004.
 - UI at `/` (mounted last), API under `/api/` (WebSocket `/api/ws`),
   `/health` at the root, `make service-*`.
+- `icon-512.png` at the UI root; optional `GET /api/status` (generic stats).
 - Only relative URLs in any UI — no leading `/` in `href`, `src`, `fetch`,
   manifests. That is what lets one build run standalone and under a prefix.
 - Pantheon composes over HTTP only; anything new must work standalone in its

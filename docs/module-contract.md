@@ -21,7 +21,8 @@ gateway (`http://<main-pi>:8000/<name>/`) with no configuration change.
   | Pluto | 8004 | `/pluto/` |
   | next module | 8005 … 8009 | `/<name>/` |
 
-- [ ] **A name matching `^[a-z][a-z0-9-]*$`.** Everything else is derived
+- [ ] **A name matching `^[a-z][a-z0-9-]*$`** (`status` is reserved: it is
+      Pantheon's own screen). Everything else is derived
       from it: gateway path `/<name>/`, unit `<name>.service`, checkout
       `modules/<name>`.
 - [ ] **UI at `/`**, mounted **last** (a mount at `/` shadows every route
@@ -44,6 +45,24 @@ gateway (`http://<main-pi>:8000/<name>/`) with no configuration change.
 - [ ] A **contract test** in the module (port, routes under `/api/`, UI at
       `/` without shadowing `/health`, a static scan for absolute URLs).
       Pantheon's own is `tests/test_contract.py`.
+- [ ] **App icon:** `icon-512.png` (512×512 PNG) at the UI root, for
+      standalone installs and phones. Pantheon's `modules.yaml` points at the
+      same file in the checkout (`icon:`, a `.png`, `.svg` or `.webp` inside
+      the Pantheon repo), so the home screen shows it even when the module
+      is down.
+- [ ] *(optional)* **`GET /api/status`** for Pantheon's status screen:
+
+      {"state": "ok" | "degraded" | "error",
+       "summary": "optional one line (max 200 chars)",
+       "stats": [{"label": "...", "value": 42,
+                  "kind": "number|count|time|text|percent", "warn": false}]}
+
+      `value` is a string, number, boolean or null; `label` is at most 80
+      characters and there are at most 20 stats. `time` values are ISO-8601
+      UTC. Pantheon shows the stats as-is and never interprets labels;
+      `degraded`/`error` turn the module's dot yellow (`/health` still
+      decides online vs. offline). A body of the wrong shape is ignored.
+      Keep it cheap — Pantheon polls it every `MODULE_POLL_SECONDS` (10 s).
 - [ ] A **"Using with Pantheon"** section in the module README.
 
 ## What the gateway does
@@ -69,5 +88,5 @@ standalone, and why it must not emit absolute URLs or redirects.
 2. `git submodule add -b main <url> modules/<name>`, add it to `MODULES` in
    the Makefile and to `modules.yaml.example`.
 3. On the main Pi: add it to `modules.yaml` (`name`, `title`, `port`,
-   `enabled`), then `make service-install-all`. Re-routing an existing
+   `enabled`, `icon`), then `make service-install-all`. Re-routing an existing
    module (port change) needs only `make gateway-config`.
