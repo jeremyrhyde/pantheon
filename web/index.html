@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0d1117">
   <title>Pantheon</title>
-  <link rel="icon" type="image/svg+xml" href="/ui/icon.svg">
-  <link rel="manifest" href="/ui/manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="manifest" href="manifest.webmanifest">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Pantheon">
-  <link rel="stylesheet" href="/ui/style.css">
-  <script defer src="/ui/app.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="app.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 </head>
 <body x-data="app()" x-cloak>
@@ -36,10 +36,18 @@
 
   <main>
     <section x-show="tab === 'home'" role="tabpanel" class="panel">
-      <div class="card">
-        <div class="card-label">Status</div>
-        <div class="card-value" x-text="healthy ? 'Running' : 'Unreachable'"></div>
+      <div class="tiles">
+        <template x-for="m in modules" :key="m.name">
+          <a class="card tile" :href="m.enabled ? m.path : null" :aria-disabled="!m.enabled">
+            <div class="card-label" x-text="m.title"></div>
+            <span class="status" :class="m.healthy ? 'online' : 'offline'">
+              <span class="dot" aria-hidden="true"></span>
+              <span x-text="!m.enabled ? 'not available' : (m.healthy ? 'online' : 'offline')"></span>
+            </span>
+          </a>
+        </template>
       </div>
+      <div class="empty" x-show="modules.length === 0">No modules registered — see modules.yaml.</div>
     </section>
 
     <section x-show="tab === 'settings'" role="tabpanel" class="panel">

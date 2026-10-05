@@ -141,7 +141,7 @@ run-dev:
 
 .PHONY: open
 open:
-	@python3 -c "import webbrowser; webbrowser.open('$(PANTHEON_HOST)/ui/')"
+	@python3 -c "import webbrowser; webbrowser.open('$(PANTHEON_HOST)/')"
 
 .PHONY: health
 health:
