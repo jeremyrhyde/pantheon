@@ -94,6 +94,8 @@ def load_modules_config(
                 raise ValueError(
                     f"module {module.name!r} icon {module.icon!r} is outside the Pantheon repo"
                 )
+            if Path(module.icon).suffix.lower() not in (".png", ".svg", ".webp"):
+                raise ValueError(f"module {module.name!r} icon must be a .png, .svg or .webp file")
     return config
 
 

@@ -58,3 +58,9 @@ def test_module_status_shape():
     assert status.stats[0].kind == "number" and status.stats[0].warn is False
     with pytest.raises(ValueError):
         ModuleStatus.model_validate({"state": "fine"})
+
+
+@pytest.mark.parametrize("field,value", [("throttled", "0x" + "1" * 17), ("agent_version", 0), ("agent_version", 1001)])
+def test_heartbeat_bounds(field, value):
+    with pytest.raises(ValueError):
+        Heartbeat(hostname="h", chromium_running=True, **{field: value})

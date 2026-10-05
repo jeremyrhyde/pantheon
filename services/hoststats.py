@@ -62,6 +62,7 @@ class HostSampler:
         self._wall = wall
         self._hostname = hostname
         self._prev_net: tuple[float, int, int] | None = None
+        self._ps.cpu_percent(percpu=True)  # prime the counters so the first sample isn't a fake 0
 
     def sample(self) -> dict[str, Any]:
         per_core = [round(v, 1) for v in self._ps.cpu_percent(percpu=True)]

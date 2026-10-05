@@ -66,3 +66,25 @@ async def test_follow_reads_new_lines_and_survives_rotation(tmp_path):
     task.cancel()
     assert log.module_activity("apollo")["last_api_call"] == 995.0
     assert log.module_activity("apollo")["req_per_min"] == 2
+
+
+async def test_follow_drains_the_old_file_before_switching_on_rotation(tmp_path):
+    path = tmp_path / "access.log"
+    path.write_text("")
+    log = AccessLog(path, {"apollo"}, clock=lambda: 1000.0)
+    task = asyncio.create_task(log.follow(poll_s=0.2))
+    await asyncio.sleep(0.05)                                # first pass done, now sleeping
+    with path.open("a") as f:
+        f.write(line("/apollo/api/last-words", ts=990))
+    path.rename(tmp_path / "access-1.log")
+    path.write_text(line("/apollo/api/fresh", ts=995))
+    await asyncio.sleep(0.4)
+    task.cancel()
+    assert log.module_activity("apollo")["req_per_min"] == 2
+
+
+def test_ingest_prunes_old_requests_without_a_reader(tmp_path):
+    log = AccessLog(tmp_path / "a.log", {"apollo"}, clock=lambda: 1000.0)
+    log.ingest(line("/apollo/api/a", ts=100))
+    log.ingest(line("/apollo/api/b", ts=200))
+    assert len(log._activity["apollo"].requests) == 1

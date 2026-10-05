@@ -63,6 +63,8 @@ class AccessLog:
             rest = path[len(first) + 1:]
             activity = self._activity.setdefault(first, _Activity())
             activity.requests.append(ts)
+            while activity.requests and activity.requests[0] < ts - _WINDOW_S:
+                activity.requests.popleft()
             if rest.startswith("/api/"):
                 activity.last_api_call = max(ts, activity.last_api_call or ts)
             elif method == "GET" and rest in ("", "/", "/index.html"):
@@ -99,6 +101,18 @@ class AccessLog:
         seen = self._clients.get(ip) if ip else None
         return seen[1] if seen else None
 
+    def _drain(self, handle, partial: str) -> str:
+        """Ingest the complete lines available from `handle`; return the
+        trailing incomplete fragment."""
+        while True:
+            chunk = handle.readline()
+            if not chunk:
+                return partial
+            if not chunk.endswith("\n"):
+                return partial + chunk
+            self.ingest(partial + chunk)
+            partial = ""
+
     async def follow(self, poll_s: float = 1.0) -> None:
         """Tail the log forever: skip what's there at startup, reopen on
         rotation, wait quietly while the file doesn't exist."""
@@ -113,21 +127,14 @@ class AccessLog:
                     stat = os.stat(self._path)
                     if handle is None or stat.st_ino != inode or stat.st_size < handle.tell():
                         if handle is not None:
+                            self._drain(handle, partial)
                             handle.close()
                         handle = open(self._path, encoding="utf-8", errors="replace")
                         if skip_existing:
                             handle.seek(0, os.SEEK_END)
                         inode = stat.st_ino
                         partial = ""
-                    while True:
-                        chunk = handle.readline()
-                        if not chunk:
-                            break
-                        if not chunk.endswith("\n"):
-                            partial += chunk
-                            break
-                        self.ingest(partial + chunk)
-                        partial = ""
+                    partial = self._drain(handle, partial)
                 except FileNotFoundError:
                     pass
                 skip_existing = False

@@ -82,3 +82,10 @@ def test_example_registry_sets_an_icon_for_every_module():
         "hestia": "modules/hestia/web/icon-512.png",
         "pluto": "modules/pluto/web/icon-512.png",
     }
+
+
+@pytest.mark.parametrize("icon", [".env", '""', "web"])
+def test_icon_must_be_an_image_file(tmp_path, icon):
+    with pytest.raises(ValueError, match=r"icon must be a \.png, \.svg or \.webp file"):
+        load_modules_config(settings=_settings(
+            tmp_path, f"modules:\n  - {{name: a, title: A, port: 8001, icon: {icon}}}\n"))

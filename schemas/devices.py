@@ -42,5 +42,5 @@ class Heartbeat(BaseModel):
     mem_used_mb: float | None = Field(default=None, ge=0)
     mem_total_mb: float | None = Field(default=None, ge=0)
     temp_c: float | None = Field(default=None, ge=-40, le=150)
-    throttled: str | None = Field(default=None, pattern=r"^0x[0-9a-fA-F]+$")
-    agent_version: int = 1
+    throttled: str | None = Field(default=None, pattern=r"^0x[0-9a-fA-F]+$", max_length=18)
+    agent_version: int = Field(default=1, ge=1, le=1000)

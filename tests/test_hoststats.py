@@ -68,3 +68,11 @@ def test_decode_throttled():
     assert decode_throttled(0)["raw"] == "0x0"
     assert decode_throttled(0x80008)["now"]["soft_temp_limit"] is True
     assert decode_throttled(0x80008)["since_boot"]["soft_temp_limit"] is True
+
+
+def test_cpu_counters_are_primed_at_init():
+    calls = []
+    ps = _ps(0)
+    ps.cpu_percent = lambda percpu=False: calls.append(percpu) or [10.0]
+    HostSampler(ps=ps)
+    assert calls == [True]
