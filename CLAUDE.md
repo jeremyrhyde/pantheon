@@ -22,7 +22,8 @@ each its own repo with its own `make setup build run test clean`. Pantheon's
   `<repo>-specific` are each repo's own.
 - When a piece is needed, look in the modules first for a working version:
   `hermes/core/{events,websocket,state}.py`, `hermes/config.py`,
-  `hestia/web/`, `hestia/scripts/` + `hestia/deploy/`.
+  `hestia/frontend/` or `apollo/frontend/` (Svelte + Vite UIs),
+  `hestia/scripts/` + `hestia/deploy/`.
 
 ## Module contract (docs/module-contract.md)
 

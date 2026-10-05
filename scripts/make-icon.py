@@ -3,7 +3,7 @@ dot-constellation glyph, in the spirit of Hestia's and Pluto's icons.
 
     uv run python scripts/make-icon.py <sun|wing> <out_dir> <file:size>...
 
-e.g. `... wing modules/hermes/web icon.png:1024 icon-512.png:512`. Replace the
+e.g. `... sun modules/apollo/frontend/public icon-512.png:512`. Replace the
 output with real art at the same paths any time — nothing else changes.
 """
 
