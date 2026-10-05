@@ -1,0 +1,10 @@
+# Pantheon heartbeat — one check-in with the main Pi (see heartbeat.sh).
+# Installed by scripts/install-kiosk.sh --server <main-pi>; run by the timer.
+
+[Unit]
+Description=Pantheon heartbeat (tells the main Pi this display is alive)
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=@PANTHEON_HOME@/web/kiosk/heartbeat.sh

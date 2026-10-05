@@ -6,7 +6,8 @@
 # tty1 auto-login so the kiosk launches at boot. On the main Pi, run
 # install-all.sh (or install-server.sh) first; the kiosk then points Chromium
 # at the local gateway. Edge displays use --server <main-pi> and need nothing
-# else installed.
+# else installed. Edge displays (--server) also get pantheon-heartbeat.timer,
+# which reports to the main Pi's status screen.
 #
 # RECOMMENDED BASE OS: Raspberry Pi OS Lite (headless, no desktop). It ships
 # no display system, so --headless mode adds only a bare X stack + Chromium
@@ -42,7 +43,7 @@ while [[ $# -gt 0 ]]; do
       if [[ $# -lt 2 || "$2" == --* ]]; then echo "--server needs an IP or hostname" >&2; exit 2; fi
       KIOSK_SERVER="$2"; shift 2 ;;
     --uninstall) ACTION="uninstall"; shift ;;
-    -h|--help)   sed -n '3,24p' "$0" | sed 's/^# \?//'; exit 0 ;;
+    -h|--help)   sed -n '3,26p' "$0" | sed 's/^# \?//'; exit 0 ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
 done
@@ -76,6 +77,8 @@ if [[ "$ACTION" == "uninstall" ]]; then
   systemctl --user disable --now pantheon-kiosk.service 2>/dev/null || true
   rm -f "$SYSTEMD_USER_DIR/pantheon-kiosk.service"
   rm -f "$PANTHEON_HOME/kiosk.env"
+  systemctl --user disable --now pantheon-heartbeat.timer 2>/dev/null || true
+  rm -f "$SYSTEMD_USER_DIR/pantheon-heartbeat.service" "$SYSTEMD_USER_DIR/pantheon-heartbeat.timer"
   systemctl --user daemon-reload || true
   echo "Done. X stack / tty1 auto-login / .bash_profile changes left in place"
   echo "— remove manually if desired."
@@ -109,6 +112,19 @@ chmod +x "$PANTHEON_HOME/web/kiosk/start-kiosk.sh"
   if [[ -n "$KIOSK_SERVER" ]]; then echo "SERVER_IP_ADDRESS=$KIOSK_SERVER"; fi
 } > "$PANTHEON_HOME/kiosk.env"
 echo "  kiosk opens: $(bash "$PANTHEON_HOME/web/kiosk/start-kiosk.sh" --print-url)"
+
+# Edge displays (--server) check in with the main Pi every minute for its
+# status screen; the main Pi reports itself, so drop the agent there.
+if [[ -n "$KIOSK_SERVER" ]]; then
+  chmod +x "$PANTHEON_HOME/web/kiosk/heartbeat.sh"
+  render_unit "$PANTHEON_HOME/web/kiosk/pantheon-heartbeat.service" "$SYSTEMD_USER_DIR/pantheon-heartbeat.service"
+  render_unit "$PANTHEON_HOME/web/kiosk/pantheon-heartbeat.timer" "$SYSTEMD_USER_DIR/pantheon-heartbeat.timer"
+  INSTALL_HEARTBEAT=1
+else
+  systemctl --user disable --now pantheon-heartbeat.timer 2>/dev/null || true
+  rm -f "$SYSTEMD_USER_DIR/pantheon-heartbeat.service" "$SYSTEMD_USER_DIR/pantheon-heartbeat.timer"
+  INSTALL_HEARTBEAT=""
+fi
 
 # 2. Install kiosk dependencies (chromium + unclutter, plus X stack if headless).
 echo
@@ -206,6 +222,10 @@ echo
 echo "[3/4] enabling pantheon-kiosk.service..."
 systemctl --user daemon-reload
 systemctl --user enable pantheon-kiosk.service || true
+if [[ -n "$INSTALL_HEARTBEAT" ]]; then
+  systemctl --user enable --now pantheon-heartbeat.timer || true
+  echo "  heartbeat: every minute to $KIOSK_SERVER"
+fi
 
 # 4. Status
 echo

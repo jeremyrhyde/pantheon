@@ -1,0 +1,12 @@
+# Every minute, from 30 s after boot (the kiosk auto-logs in, starting the
+# user session this timer runs in).
+
+[Unit]
+Description=Pantheon heartbeat every minute
+
+[Timer]
+OnBootSec=30
+OnUnitActiveSec=60
+
+[Install]
+WantedBy=timers.target
