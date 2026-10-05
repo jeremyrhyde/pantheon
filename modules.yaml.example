@@ -18,7 +18,7 @@ modules:
   - name: hestia
     title: Hestia
     port: 8003
-    icon: modules/hestia/web/icon-512.png
+    icon: modules/hestia/frontend/public/icon-512.png
     enabled: true
   - name: pluto
     title: Pluto

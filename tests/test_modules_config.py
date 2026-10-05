@@ -79,7 +79,7 @@ def test_example_registry_sets_an_icon_for_every_module():
     assert {m.name: m.icon for m in config.modules} == {
         "apollo": "modules/apollo/frontend/public/icon-512.png",
         "hermes": "modules/hermes/frontend/public/icon-512.png",
-        "hestia": "modules/hestia/web/icon-512.png",
+        "hestia": "modules/hestia/frontend/public/icon-512.png",
         "pluto": "modules/pluto/web/icon-512.png",
     }
 
