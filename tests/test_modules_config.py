@@ -53,3 +53,32 @@ def test_example_file_loads():
 def test_rejects_bad_registries(tmp_path, yaml_text, message):
     with pytest.raises(ValueError, match=message):
         load_modules_config(settings=_settings(tmp_path, yaml_text))
+from config import REPO_ROOT
+
+
+def test_status_is_a_reserved_name(tmp_path):
+    with pytest.raises(ValueError, match="reserved"):
+        load_modules_config(settings=_settings(tmp_path, "modules:\n  - {name: status, title: S, port: 8001}\n"))
+
+
+def test_icon_path_inside_the_repo_is_kept(tmp_path):
+    config = load_modules_config(settings=_settings(
+        tmp_path, "modules:\n  - {name: a, title: A, port: 8001, icon: web/icon.svg}\n"))
+    assert config.modules[0].icon == "web/icon.svg"
+    assert (REPO_ROOT / config.modules[0].icon).is_file()
+
+
+def test_icon_path_outside_the_repo_is_rejected(tmp_path):
+    with pytest.raises(ValueError, match="outside the Pantheon repo"):
+        load_modules_config(settings=_settings(
+            tmp_path, "modules:\n  - {name: a, title: A, port: 8001, icon: ../../etc/passwd}\n"))
+
+
+def test_example_registry_sets_an_icon_for_every_module():
+    config = load_modules_config(EXAMPLE, settings=Settings(_env_file=None, PORT=8010, GATEWAY_PORT=8000))
+    assert {m.name: m.icon for m in config.modules} == {
+        "apollo": "modules/apollo/frontend/public/icon-512.png",
+        "hermes": "modules/hermes/web/icon-512.png",
+        "hestia": "modules/hestia/web/icon-512.png",
+        "pluto": "modules/pluto/web/icon-512.png",
+    }

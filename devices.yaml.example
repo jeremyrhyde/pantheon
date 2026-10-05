@@ -1,0 +1,12 @@
+# Edge devices Pantheon expects (optional). Copy to devices.yaml (gitignored).
+# Each is pinged every DEVICE_PING_SECONDS; its heartbeat (installed by
+# `make kiosk-install MODULE=<m> SERVER=<main-pi>`) is matched by IP, so give
+# edge Pis a DHCP reservation. Devices that send heartbeats without being
+# listed still appear on the status screen, marked "unlisted".
+devices:
+  - name: bathroom          # shown on the status screen
+    host: 192.168.1.42      # IP or hostname
+    module: apollo          # what it should show (a module name or "status")
+  - name: desk
+    host: 192.168.1.43
+    module: status

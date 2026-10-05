@@ -2,7 +2,7 @@
 
 Everything else about a module is derived from its `name` — gateway path
 `/<name>/`, systemd unit `<name>.service`, checkout `modules/<name>` — so an
-entry is four fields.
+entry is four fields (plus an optional `icon`).
 """
 
 from __future__ import annotations
@@ -13,18 +13,25 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 _NAME = re.compile(r"^[a-z][a-z0-9-]*$")
 
+# Paths Pantheon serves itself, so no module may take them.
+RESERVED_NAMES = frozenset({"status"})
+
 
 class ModuleEntry(BaseModel):
     name: str
     title: str
     port: int = Field(gt=0, lt=65536)
     enabled: bool = True
+    # App icon, relative to the Pantheon repo (checked by load_modules_config).
+    icon: str | None = None
 
     @field_validator("name")
     @classmethod
     def _url_safe(cls, value: str) -> str:
         if not _NAME.match(value):
             raise ValueError(f"module name {value!r} must match {_NAME.pattern}")
+        if value in RESERVED_NAMES:
+            raise ValueError(f"module name {value!r} is reserved by Pantheon")
         return value
 
     @field_validator("title")

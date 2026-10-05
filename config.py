@@ -14,7 +14,11 @@ import yaml
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from schemas.devices import DevicesConfig
 from schemas.modules import ModulesConfig
+
+# This file sits at the repo root; icon paths and default files hang off it.
+REPO_ROOT = Path(__file__).resolve().parent
 
 
 class Settings(BaseSettings):
@@ -31,9 +35,32 @@ class Settings(BaseSettings):
     MODULES_CONFIG_PATH: str = "./modules.yaml"
     MODULE_HEALTH_TIMEOUT_SECONDS: float = Field(default=1.0, gt=0)
 
+    # Status collectors (all in memory).
+    HOST_SAMPLE_SECONDS: float = Field(default=3.0, gt=0)
+    MODULE_POLL_SECONDS: float = Field(default=10.0, gt=0)
+    DEVICE_PING_SECONDS: float = Field(default=60.0, gt=0)
+    HEARTBEAT_STALE_SECONDS: float = Field(default=150.0, gt=0)
+    HISTORY_SECONDS: float = Field(default=3600.0, gt=0)
+    DEVICES_CONFIG_PATH: str = "./devices.yaml"
+    # Caddy's JSON access log. Empty → $XDG_RUNTIME_DIR/pantheon/access.log
+    # (tmpfs, no SD-card wear), or ./build/access.log without a runtime dir.
+    ACCESS_LOG_PATH: str = ""
+    # Set by systemd/logind for the user; read here, never at a call site.
+    XDG_RUNTIME_DIR: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
+
+    @property
+    def access_log_path(self) -> Path:
+        if self.ACCESS_LOG_PATH:
+            path = Path(self.ACCESS_LOG_PATH)
+        elif self.XDG_RUNTIME_DIR:
+            path = Path(self.XDG_RUNTIME_DIR) / "pantheon" / "access.log"
+        else:
+            path = Path("build") / "access.log"
+        return path if path.is_absolute() else REPO_ROOT / path
 
 
 def load_modules_config(
@@ -43,7 +70,7 @@ def load_modules_config(
 
     A missing file yields an empty registry, so Pantheon boots before one is
     written. Raises ``ValueError`` if a module's port is one Pantheon itself
-    uses.
+    uses, or its icon path points outside the repo.
     """
 
     settings = settings or Settings()
@@ -61,4 +88,23 @@ def load_modules_config(
                 f"module {module.name!r} port {module.port} clashes with "
                 f"Pantheon's {reserved[module.port]}"
             )
+        if module.icon is not None:
+            icon = (REPO_ROOT / module.icon).resolve()
+            if not icon.is_relative_to(REPO_ROOT):
+                raise ValueError(
+                    f"module {module.name!r} icon {module.icon!r} is outside the Pantheon repo"
+                )
     return config
+
+
+def load_devices_config(
+    path: str | Path | None = None, *, settings: Settings | None = None
+) -> DevicesConfig:
+    """Read and validate devices.yaml; a missing file is an empty list."""
+
+    settings = settings or Settings()
+    p = Path(path or settings.DEVICES_CONFIG_PATH)
+    if not p.exists():
+        return DevicesConfig()
+    raw = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+    return DevicesConfig.model_validate(raw)

@@ -32,4 +32,5 @@ node_modules/
 # ---- pantheon-specific ----
 .claude/
 modules.yaml
+devices.yaml
 kiosk.env
