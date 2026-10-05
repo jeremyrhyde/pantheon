@@ -53,6 +53,8 @@ help:
 	@echo ""
 	@echo "Run:"
 	@echo "  make run-dev          Start with auto-reload (HOST/PORT overridable)"
+	@echo "  make run-all          Whole system in this terminal: modules + Pantheon + gateway"
+	@echo "  make run-dev-all      Same, every app with auto-reload (Ctrl-C stops all)"
 	@echo "  make open             Open the web UI in a browser"
 	@echo "  make health           curl /health on a running server"
 	@echo ""
@@ -146,6 +148,16 @@ run:
 .PHONY: run-dev
 run-dev:
 	$(UV) run uvicorn main:app --reload --host $(HOST) --port $(PORT)
+
+# The whole system in this terminal (local testing): enabled modules +
+# Pantheon + the Caddy gateway, tagged logs, Ctrl-C stops all. Needs caddy.
+.PHONY: run-all
+run-all: modules.yaml
+	./scripts/run-all.sh
+
+.PHONY: run-dev-all
+run-dev-all: modules.yaml
+	./scripts/run-all.sh --dev
 
 .PHONY: open
 open:

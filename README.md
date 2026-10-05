@@ -131,6 +131,17 @@ make run                     # Pantheon app only: http://localhost:8010/
 make test
 ```
 
+To run the whole system in one terminal (every enabled module, Pantheon and
+the gateway, with tagged logs; Ctrl-C stops all), after `make setup-all
+build-all` and with [`caddy`](https://caddyserver.com/download) on your PATH:
+
+```bash
+make run-all                 # each app's `make run`  → http://localhost:8000/
+make run-dev-all             # each app's `make run-dev` (auto-reload)
+```
+
+This is for local testing; on the Pi use `make service-install-all`.
+
 Copy `.env.example` to `.env` to override settings (ports, module registry
 path, health timeout).
 
@@ -151,7 +162,7 @@ services/health.py    HealthChecker — cached module /health probes
 tests/                pytest
 web/                  home screen (Alpine.js, no build) + kiosk launcher
 deploy/               pantheon.service, pantheon-gateway.service, launchd, headless-X files
-scripts/              install-server.sh, install-kiosk.sh, install-all.sh
+scripts/              install-server.sh, install-kiosk.sh, install-all.sh, run-all.sh
 docs/                 module contract, dated specs and plans
 artifacts/            committed assets (diagrams, README images)
 modules/              apollo, hermes, hestia, pluto (git submodules)
