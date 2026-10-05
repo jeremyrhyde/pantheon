@@ -10,11 +10,11 @@ dependencies = [
     "pydantic-settings",
     "pyyaml",
     "aiosqlite",
+    "httpx",
 ]
 
 [dependency-groups]
 dev = [
-    "httpx",
     "pytest",
     "pytest-asyncio",
 ]
