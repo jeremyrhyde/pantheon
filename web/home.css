@@ -62,10 +62,22 @@ body.home {
 
 .node__halo {
   position: relative;
+  isolation: isolate;
   width: var(--node-size);
   height: var(--node-size);
   border-radius: var(--radius-node);
-  box-shadow: 0 0 var(--glow-lg) var(--color-glow);
+}
+.node__halo::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 190%;
+  height: 190%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, var(--color-glow), transparent 70%);
+  z-index: -1;
+  pointer-events: none;
 }
 .node__icon,
 .node__initial {
@@ -107,5 +119,6 @@ body.home {
   50%      { translate: 0 calc(var(--space-2) * -1.5); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .node { animation: none; }
+  .node { animation: none; transition: none; }
+  .constellation { transition: none; }
 }

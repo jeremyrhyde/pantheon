@@ -29,6 +29,7 @@ function startStarfield(canvas, { dim = 1, speed = 1 } = {}) {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     width = canvas.clientWidth;
     height = canvas.clientHeight;
+    if (!width || !height) { stars = []; return; }
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -56,6 +57,7 @@ function startStarfield(canvas, { dim = 1, speed = 1 } = {}) {
     }
     if (shooting) {
       const len = Math.hypot(shooting.vx, shooting.vy);
+      if (!len) { shooting = null; ctx.globalAlpha = 1; return; }
       const tx = shooting.x - (shooting.vx / len) * 90;
       const ty = shooting.y - (shooting.vy / len) * 90;
       const gradient = ctx.createLinearGradient(shooting.x, shooting.y, tx, ty);
@@ -74,6 +76,7 @@ function startStarfield(canvas, { dim = 1, speed = 1 } = {}) {
 
   function step(t) {
     requestAnimationFrame(step);
+    if (!width || !height) return;
     if (t - last < FRAME_MS) return;
     const dt = (t - last) / 1000;
     last = t;
@@ -95,7 +98,14 @@ function startStarfield(canvas, { dim = 1, speed = 1 } = {}) {
     draw(t);
   }
 
-  window.addEventListener('resize', resize);
+  // The canvas may have no size yet (Alpine runs init() before it removes
+  // x-cloak); the observer fires once it has one, and again on every resize.
+  let pending = false;
+  new ResizeObserver(() => {
+    if (pending) return;
+    pending = true;
+    requestAnimationFrame(() => { pending = false; resize(); });
+  }).observe(canvas);
   resize();
   if (!reduced) requestAnimationFrame(step);
 }

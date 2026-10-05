@@ -4,7 +4,14 @@
  * screen apart from the status screen. */
 
 const HOME_POLL_MS = 10_000;
-const LEAVE_MS = 400; // matches --duration-leave
+
+// The leave duration lives in style.css as --duration-leave.
+function leaveMs() {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue('--duration-leave').trim();
+  const n = parseFloat(raw);
+  if (!Number.isFinite(n)) return 400;
+  return raw.endsWith('ms') ? n : raw.endsWith('s') ? n * 1000 : n;
+}
 
 function homeApp() {
   return {
@@ -23,6 +30,9 @@ function homeApp() {
       setInterval(() => this.tick(), 1000);
       this.refresh();
       setInterval(() => this.refresh(), HOME_POLL_MS);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) this.refresh();
+      });
       // Coming back with the browser's Back button restores this page as it
       // was left — mid-zoom. Reset it.
       window.addEventListener('pageshow', (e) => {
@@ -37,6 +47,7 @@ function homeApp() {
     },
 
     async refresh() {
+      if (document.hidden) return;
       try {
         const res = await fetch('api/overview?from=home');
         if (!res.ok) throw new Error(String(res.status));
@@ -54,7 +65,7 @@ function homeApp() {
       if (!m.enabled || this.leaving) return;
       this.chosen = m.name;
       this.leaving = true;
-      setTimeout(() => { window.location.href = m.path; }, LEAVE_MS);
+      setTimeout(() => { window.location.href = m.path; }, leaveMs());
     },
   };
 }
