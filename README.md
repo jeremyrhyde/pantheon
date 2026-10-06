@@ -127,6 +127,10 @@ make kiosk-install MODULE=apollo SERVER=<main-pi-ip>   # omit MODULE for the hom
 to change what the screen shows (it rewrites `kiosk.env`);
 `make kiosk-uninstall` removes it (and the heartbeat timer).
 
+Kiosks ask pages for a dark theme by default (Apollo, and Hestia on Auto, follow
+it); put `KIOSK_THEME=light` in `.env` to opt out. To open a specific screen,
+set a full `PANTHEON_UI_URL` in `.env`, e.g. `http://<SERVER>:8000/apollo/#/selfcare`.
+
 ### Standalone module node
 
 A module on its own, with no Pantheon at all — clone the module's repo and

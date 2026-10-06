@@ -40,3 +40,30 @@ def _url(tmp_path: Path, env: dict[str, str], kiosk_env: str | None, dotenv: str
 ])
 def test_print_url(tmp_path, env, kiosk_env, dotenv, expected):
     assert _url(tmp_path, env, kiosk_env, dotenv) == expected
+
+
+def _flags(tmp_path: Path, kiosk_env: str | None = None) -> list[str]:
+    kiosk_dir = tmp_path / "web" / "kiosk"
+    kiosk_dir.mkdir(parents=True)
+    shutil.copy(SCRIPT, kiosk_dir / "start-kiosk.sh")
+    if kiosk_env is not None:
+        (tmp_path / "kiosk.env").write_text(kiosk_env)
+    out = subprocess.run(
+        ["bash", str(kiosk_dir / "start-kiosk.sh"), "--print-flags"],
+        env={"PATH": os.environ["PATH"]}, capture_output=True, text=True, check=True,
+    )
+    return out.stdout.split()
+
+
+def test_kiosks_prefer_dark_by_default(tmp_path):
+    flags = _flags(tmp_path)
+    assert "--force-dark-mode" in flags
+    assert "--blink-settings=preferredColorScheme=0" in flags
+    assert "--kiosk" in flags
+
+
+def test_kiosk_theme_light_opts_out(tmp_path):
+    flags = _flags(tmp_path, "KIOSK_THEME=light\n")
+    assert "--force-dark-mode" not in flags
+    assert not any(f.startswith("--blink-settings") for f in flags)
+    assert "--kiosk" in flags

@@ -29,10 +29,46 @@ else
   UI_URL="http://${SERVER_IP_ADDRESS:-localhost}:${GATEWAY_PORT:-8000}/${KIOSK_MODULE:+${KIOSK_MODULE}/}"
 fi
 
-if [[ "${1:-}" == "--print-url" ]]; then
-  echo "${UI_URL}"
-  exit 0
-fi
+# Flag notes (RAM-constrained Pi 4 kiosk):
+#  - We intentionally do NOT pass --disable-gpu: on the Pi it forces slow
+#    software rendering, hurting the "snappier UI" goal. Let Chromium use
+#    the VideoCore GPU.
+#  - --disk-cache-size bounds Chromium's on-disk cache (bytes); it does not
+#    cap RAM directly but stops unbounded cache growth on a long-lived kiosk.
+#  - --disable-features=TranslateUI and --disable-session-crashed-bubble
+#    suppress popups that would otherwise overlay the kiosk UI after a
+#    crash/restart. These are the flags the documented Pi-kiosk reference
+#    implementations (FullPageOS, reelyactive) converge on.
+CHROMIUM_FLAGS=(
+  --kiosk
+  --noerrdialogs
+  --disable-infobars
+  --disable-restore-session-state
+  --disable-session-crashed-bubble
+  --disable-pinch
+  --disable-features=TranslateUI
+  --disable-component-update
+  --overscroll-history-navigation=0
+  --check-for-update-interval=31536000
+  --autoplay-policy=no-user-gesture-required
+  --disk-cache-size=52428800
+)
+
+# Theme: Pantheon and its modules are dark-first, but a bare kiosk has no
+# desktop to say "prefer dark", so Chromium reports light and modules that
+# follow prefers-color-scheme (Apollo; Hestia on Auto) come up light. Default
+# to dark; KIOSK_THEME=light in kiosk.env or .env opts out.
+case "${KIOSK_THEME:-dark}" in
+  dark)  CHROMIUM_FLAGS+=(--force-dark-mode --blink-settings=preferredColorScheme=0) ;;
+  light) ;;
+  *)     echo "start-kiosk: unknown KIOSK_THEME '${KIOSK_THEME}', using dark" >&2
+         CHROMIUM_FLAGS+=(--force-dark-mode --blink-settings=preferredColorScheme=0) ;;
+esac
+
+case "${1:-}" in
+  --print-url)   echo "${UI_URL}"; exit 0 ;;
+  --print-flags) printf '%s\n' "${CHROMIUM_FLAGS[@]}"; exit 0 ;;
+esac
 
 # Disable screen blanking / DPMS so the touchscreen stays on indefinitely.
 xset s off
@@ -52,27 +88,4 @@ fi
 
 echo "start-kiosk: opening ${UI_URL}" >&2
 
-# Flag notes (RAM-constrained Pi 4 kiosk):
-#  - We intentionally do NOT pass --disable-gpu: on the Pi it forces slow
-#    software rendering, hurting the "snappier UI" goal. Let Chromium use
-#    the VideoCore GPU.
-#  - --disk-cache-size bounds Chromium's on-disk cache (bytes); it does not
-#    cap RAM directly but stops unbounded cache growth on a long-lived kiosk.
-#  - --disable-features=TranslateUI and --disable-session-crashed-bubble
-#    suppress popups that would otherwise overlay the kiosk UI after a
-#    crash/restart. These are the flags the documented Pi-kiosk reference
-#    implementations (FullPageOS, reelyactive) converge on.
-exec "${CHROMIUM_BIN}" \
-  --kiosk \
-  --noerrdialogs \
-  --disable-infobars \
-  --disable-restore-session-state \
-  --disable-session-crashed-bubble \
-  --disable-pinch \
-  --disable-features=TranslateUI \
-  --disable-component-update \
-  --overscroll-history-navigation=0 \
-  --check-for-update-interval=31536000 \
-  --autoplay-policy=no-user-gesture-required \
-  --disk-cache-size=52428800 \
-  "${UI_URL}"
+exec "${CHROMIUM_BIN}" "${CHROMIUM_FLAGS[@]}" "${UI_URL}"
