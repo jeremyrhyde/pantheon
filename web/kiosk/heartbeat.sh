@@ -70,8 +70,8 @@ throttled() {  # only a well-formed hex value, else nothing (→ null)
   v="$(vcgencmd get_throttled 2>/dev/null | sed -n 's/^throttled=//p')"
   if [[ "$v" =~ ^0x[0-9a-fA-F]+$ && ${#v} -le 18 ]]; then printf '%s' "$v"; fi
 }
-chromium_running() {
-  if pgrep -x chromium >/dev/null 2>&1 || pgrep -x chromium-browser >/dev/null 2>&1; then echo true; else echo false; fi
+chromium_running() {  # the snap's process is "chrome"; names cap at 15 chars
+  if pgrep -x 'chromium|chromium-browse|chrome' >/dev/null 2>&1; then echo true; else echo false; fi
 }
 
 read -r mem_used mem_total <<< "$(mem_mb)"
